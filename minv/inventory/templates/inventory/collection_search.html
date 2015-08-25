@@ -1,0 +1,32 @@
+{% extends "inventory/base.html" %}
+
+{% block head %}
+{{ block.super }}
+{{ search_form.media }}
+
+
+
+{% endblock %}
+
+
+{% block content %}
+
+Collection Search
+
+{{ collection.mission }} {{ collection.file_type }}
+
+<form action="{% url 'inventory:collection-search' mission=collection.mission file_type=collection.file_type %}" method="post" class="form-horizontal">
+  {% csrf_token %}
+  {% for field in search_form %}
+    <div class="form-group">
+      {{ field.errors }}
+      <label for="{{ field.id_for_label }}" class="col-sm-2 control-label">{{ field.label_tag }}</label>
+      {% if field.widget %}
+      {% else %}
+      <div class="col-sm-10">{{ field }}</div>
+      {% endif %}
+    </div>
+  {% endfor %}
+  <input type="submit">
+</form>
+{% endblock %}

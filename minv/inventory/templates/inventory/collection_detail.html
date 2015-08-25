@@ -1,0 +1,14 @@
+{% extends "inventory/base.html" %}
+
+{% block head %}
+{{ block.super }}
+{{ search_form.media }}
+{% endblock %}
+
+
+{% block content %}
+
+<h1>Collection {{ collection.mission }} ({{ collection.file_type }})</h1>
+
+
+{% endblock %}

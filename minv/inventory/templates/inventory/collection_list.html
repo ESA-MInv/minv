@@ -1,0 +1,18 @@
+{% extends "inventory/base.html" %}
+
+{% block head %}
+{{ block.super }}
+{{ search_form.media }}
+{% endblock %}
+
+
+{% block content %}
+
+<h1>Collection List</h1>
+
+<ul>
+{% for collection in collections %}
+    <li><a href="{% url 'inventory:collection-detail' mission=collection.mission file_type=collection.file_type %}">{{ collection.mission }}/{{ collection.file_type }}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}

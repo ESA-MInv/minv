@@ -36,7 +36,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'inventory'
+    'inventory',
+    'monitor',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -70,6 +71,15 @@ DATABASES = {
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
+
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+SHORT_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+DATETIME_FORMAT = 'c'
+
+SHORT_DATETIME_FORMAT = 'c'
+
 
 USE_I18N = True
 

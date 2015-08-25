@@ -1,0 +1,47 @@
+{% extends "inventory/base.html" %}
+
+{% block head %}
+{{ block.super }}
+{{ search_form.media }}
+{% endblock %}
+
+
+{% block content %}
+
+<h1>Task Monitor</h1>
+
+<nav class="navbar navbar-default">
+  <form method="post" action="{% url 'inventory:task-monitor' %}" class="navbar-form navbar-left" role="search">
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="control-label" for="{{ filter_form.status.id_for_label }}">{{ filter_form.status.label_tag }}</label>
+      {{ filter_form.status }}
+    </div>
+    <button type="submit" class="btn btn-default">Filter</button>
+  </form>
+</nav>
+
+<table class="table table-hover table-condensed table-bordered table-striped">
+  <tr>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Start time</th>
+    <th>End time</th>
+    <th> Run time</th>
+    <th>Status</th>
+  </tr>
+  {% for task in tasks %}
+  <tr>
+    <td>{{ task.id }}</td>
+    <td>{{ task.name }}</td>
+    <td>{{ task.start_time|date:"c" }}</td>
+    <td>{{ task.end_time|date:"c" }}</td>
+    <td>{% if task.run_time %}{{ task.run_time }}{% else %}-{% endif %}</td>
+    <td class="{% if task.status == 'pending' %}{% elif task.status == 'running' %}info{% elif task.status == 'finished' %}success{% elif task.status == 'failed' %}danger{% endif %}"><span class="glyphicon glyphicon-{% if task.status == 'pending' %}pause{% elif task.status == 'running' %}play{% elif task.status == 'finished' %}ok{% elif task.status == 'failed' %}ban-circle{% endif %}" aria-hidden="true"></span></td>
+  </tr>
+  {% endfor %}
+</table>
+
+
+
+{% endblock %}
