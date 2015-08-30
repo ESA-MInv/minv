@@ -1,0 +1,30 @@
+{% extends "inventory/collection_base.html" %}
+
+{% block head %}
+{{ block.super }}
+{{ search_form.media }}
+{% endblock %}
+
+
+{% block collection_header %}
+{% with "export" as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}
+
+
+{% block collection_content %}
+
+<form action="{% url 'inventory:collection-export' mission=collection.mission file_type=collection.file_type %}" method="post" class="form form-horizontal">
+  {% csrf_token %}
+  {{ form }}
+<button type="submit" class="btn btn-default btn-block">Export</button>
+</form>
+
+{% endblock %}
+
+{% block collection_footer %}
+{% with "export" as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}

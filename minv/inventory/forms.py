@@ -1,8 +1,7 @@
 from django import forms
 from django.db import models
-from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
-from django.core.validators import RegexValidator
+from django.core.validators import ValidationError
 
 from inventory import models as inventory_models
 
@@ -16,6 +15,11 @@ class RangeWidget(forms.MultiWidget):
     def decompress(self, value):
         print value
         return value or []
+
+    def format_output(self, rendered_widgets):
+        return '%s<span class="input-group-addon">to</span>%s' % (
+            rendered_widgets[0], rendered_widgets[1]
+        )
 
     """
     def format_output(self, rendered_widgets):
@@ -47,20 +51,48 @@ class RangeField(forms.MultiValueField):
 
     def compress(self, data_list):
         if data_list:
-            return [
-                self.fields[0].clean(data_list[0]),
-                self.fields[1].clean(data_list[1])
-            ]
+            value_low = self.fields[0].clean(data_list[0])
+            value_high = self.fields[1].clean(data_list[1])
+
+            print value_low, value_high
+            if value_low is not None and value_high is not None:
+                if value_low > value_high:
+                    raise ValidationError(
+                        "Lower value is higher than higher value."
+                    )
+                return [value_low, value_high]
+            elif value_low is not None:
+                return value_low
+            elif value_high is not None:
+                raise ValidationError("Only higher value is set.")
 
         return None
 
+attrs = {"class": "form-control input-sm"}
+date_attrs = {
+    "class": "form-control input-sm", "data-provide": "datepicker",
+    "data-date-format": "yyyy-mm-dd", "data-date-week-start": "1"
+}
+
 
 class RecordSearchForm(forms.Form):
-    def __init__(self, *args, **kwargs):
+    records_per_page = forms.ChoiceField(
+        required=False, choices=((5, "5"), (10, "10"), (15, "15"), (20, "20")),
+        widget=forms.Select(attrs=attrs)
+    )
+    page = forms.IntegerField(required=False, widget=forms.HiddenInput())
+
+    def __init__(self, locations, *args, **kwargs):
+        """ Dynamically create form fields for eligible model fields.
+        """
         super(RecordSearchForm, self).__init__(*args, **kwargs)
+        self.fields["locations"] = forms.MultipleChoiceField(
+            choices=[(location.id, str(location)) for location in locations],
+            widget=forms.CheckboxSelectMultiple
+        )
         for field in inventory_models.Record._meta.fields:
             # TODO: make ranges
-            attrs = {"class": "form-control"}
+
             if isinstance(field, models.IntegerField):
                 self.fields[field.name] = RangeField(
                     forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
@@ -71,68 +103,47 @@ class RecordSearchForm(forms.Form):
                     forms.FloatField, widget=forms.NumberInput(attrs=attrs),
                     required=False
                 )
+            elif isinstance(field, models.DateTimeField):
+                name = field.name
+                if name == "begin_time":
+                    continue
+                elif name == "end_time":
+                    name = "acquisition_date"
+                self.fields[name] = RangeField(forms.DateTimeField,
+                    required=False, widget=forms.TextInput(attrs=date_attrs)
+                )
             elif isinstance(field, models.CharField):
                 if field.choices:
                     self.fields[field.name] = forms.ChoiceField(
                         required=False, choices=((None, "---"),) + field.choices,
-                        widget=forms.Select(attrs={"class": "form-control"})
+                        widget=forms.Select(attrs=attrs)
                     )
                 else:
                     self.fields[field.name] = forms.CharField(
                         required=False, widget=forms.TextInput(attrs=attrs)
                     )
 
-            elif isinstance(field, models.DateTimeField):
-                self.fields[field.name] = forms.DateTimeField(
-                    required=False, widget=forms.TextInput(attrs={"class": "form-control", "data-provide": "datepicker"})
-                )
-                self.fields[field.name] = RangeField(forms.DateTimeField,
-                    required=False, widget=forms.TextInput(attrs={"class": "form-control", "data-provide": "datepicker"})
-                )
-    pass
-"""
-for field in inventory_models.Record._meta.fields:
-    if isinstance(field, models.IntegerField):
-        #setattr(RecordSearchForm, field.name, forms.IntegerField(required=False))
-        RecordSearchForm.
-"""
+
+class ImportExportBaseForm(forms.Form):
+    selection = forms.ChoiceField(required=False,
+        choices=(("full", "Full: Configuration and Data"),
+                 ("config", "Configuration only"),
+                 ("data", "Data only")),
+        widget=forms.Select(attrs={"class": "form-control"})
+    )
 
 
-"""class RecordSearchForm(forms.Form):
-    orbit_number_low = forms.IntegerField(required=False)
-    orbit_number_high = forms.IntegerField(required=False)
-    track_low = forms.IntegerField(required=False)
-    track_high = forms.IntegerField(required=False)
-    frame_low = forms.IntegerField(required=False)
-    frame_high = forms.IntegerField(required=False)
-    platform_serial_identifier = forms.CharField(required=False)
-    mission_phase = forms.CharField(required=False)
-    operational_mode = forms.CharField(required=False)
-    swath_low = forms.IntegerField(required=False)
-    swath_high = forms.IntegerField(required=False)
-    product_id = forms.CharField(required=False)
+class ImportForm(ImportExportBaseForm):
+    upload_package = forms.FileField(required=False)
 
-    # TODO: file class / originator
-    #begin_time = forms.DateTimeField()
-    #end_time = forms.DateTimeField()
-    insertion_time_low = forms.DateTimeField(required=False, widget=forms.SplitDateTimeWidget)
-    insertion_time_high = forms.DateTimeField(required=False)
-    creation_date = forms.DateTimeField(required=False)
-    baseline = forms.CharField(required=False)
-
-    # TODO: footprintCentre
-    processing_centre = forms.CharField(required=False)
-    processing_data_low = forms.DateTimeField(required=False)
-    processing_data_high = forms.DateTimeField(required=False)
-    processing_mode = forms.CharField(required=False)
-    processor_version = forms.CharField(required=False)
-    acquisition_station = forms.CharField(required=False)
-    orbit_direction = forms.CharField(required=False)
-    product_quality_degradatation_low = forms.FloatField(required=False)
-    product_quality_degradatation_high = forms.FloatField(required=False)
-    product_quality_status = forms.CharField(required=False)
-    product_quality_degradatation_tag = forms.CharField(required=False)
-"""
+    def __init__(self, available_packages, *args, **kwargs):
+        """ Dynamically create form fields for eligible model fields.
+        """
+        super(ImportForm, self).__init__(*args, **kwargs)
+        self.fields["select_package"] = forms.ChoiceField(required=False,
+            choices=(((None, "---"),) + available_packages),
+            widget=forms.Select(attrs={"class": "form-control"})
+        )
 
 
 class TaskFilterForm(forms.Form):

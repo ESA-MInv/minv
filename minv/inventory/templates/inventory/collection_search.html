@@ -1,32 +1,115 @@
-{% extends "inventory/base.html" %}
+{% extends "inventory/collection_base.html" %}
 
 {% block head %}
 {{ block.super }}
 {{ search_form.media }}
+{% endblock %}
 
 
+{% block collection_header %}
+{% with "search" as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}
+
+{% block collection_content %}
+{% if search_form.errors %}
+<div class="alert alert-danger alert-dismissible" role="alert">
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <strong>Warning!</strong> Better check yourself, you're not looking too good.
+</div>
+{% endif %}
+
+
+<ul class="nav nav-tabs" role="tablist">
+  <li role="presentation" class="{% if records == None %}active{% endif %}">
+    <a href="#parameters" aria-controls="home" role="tab" data-toggle="tab">Parameters</a>
+  </li>
+  <li role="presentation" class="{% if records == None %}disabled{% else %}active{% endif %}">
+    <a href="#results" aria-controls="profile" role="tab" {% if not records == None %}data-toggle="tab"{% endif %}>Results</a>
+  </li>
+</ul>
+
+<form action="{% url 'inventory:collection-search' mission=collection.mission file_type=collection.file_type %}" method="post" class="form-horizontal">
+  {% csrf_token %}
+
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane {% if records == None %}active{% endif %}" id="parameters">
+      <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+          <button type="submit" class="btn btn-default">Search</button>
+        </div>
+      </div>
+      {% for field in search_form %}
+      {% if field.name != "page" %}
+        <div class="form-group {% if field.errors %}has-error{% endif %}">
+          <label for="{{ field.id_for_label }}" class="col-sm-2 control-label">{{ field.label_tag }}</label>
+          <div class="input-group col-sm-8">
+            {{ field }}
+            {% if not field.field.choices %}
+            <span class="input-group-btn">
+              <button class="btn btn-default btn-sm" type="button" role="clear-button">Clear</button>
+            </span>
+            {% endif %}
+          </div>
+          {% for error in field.errors %}
+            <span class="help-block col-sm-offset-2">{{ error }}</span>
+          {% endfor %}
+        </div>
+      {% else %}
+        {{ field }}
+      {% endif %}
+      {% endfor %}
+      <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+          <button type="submit" class="btn btn-default">Search</button>
+        </div>
+      </div>
+      
+    </div>
+    <div role="tabpanel" class="tab-pane {% if not records == None %}active{% endif %}" id="results">
+      {% if not records %}
+        The search returned no results.
+      {% else %}
+        <p>Search hit {{ records.paginator.count }} records, showing {{ records|length }}.</p>
+        {% for record in records %}
+          {{ record }}
+        {% endfor %}
+        <nav>
+          <ul class="pagination">
+            {% if records.number > 2 %}
+              <li>
+                <a href="#" data-page="1" aria-label="Previous">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+            {% endif %}
+            {% if records.has_previous %}
+              <li><a href="#" data-page="{{ records.previous_page_number }}">{{ records.previous_page_number }}</a></li>
+            {% endif %}
+            <li class="active"><a href="#">{{ records.number }}<span class="sr-only">(current)</span></a></li>
+            {% if records.has_next %}
+              <li><a href="#" data-page="{{ records.next_page_number }}">{{ records.next_page_number }}</a></li>
+            {% endif %}
+            {% if records.has_next and records.next_page_number < records.paginator.num_pages %}
+            <li>
+              <a href="#" data-page="{{ records.paginator.num_pages }}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
+    </div>
+  </div>
+</form>
 
 {% endblock %}
 
 
-{% block content %}
-
-Collection Search
-
-{{ collection.mission }} {{ collection.file_type }}
-
-<form action="{% url 'inventory:collection-search' mission=collection.mission file_type=collection.file_type %}" method="post" class="form-horizontal">
-  {% csrf_token %}
-  {% for field in search_form %}
-    <div class="form-group">
-      {{ field.errors }}
-      <label for="{{ field.id_for_label }}" class="col-sm-2 control-label">{{ field.label_tag }}</label>
-      {% if field.widget %}
-      {% else %}
-      <div class="col-sm-10">{{ field }}</div>
-      {% endif %}
-    </div>
-  {% endfor %}
-  <input type="submit">
-</form>
+{% block collection_footer %}
+{% with "search" as current %}
+{{ block.super }}
+{% endwith %}
 {% endblock %}

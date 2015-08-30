@@ -7,7 +7,7 @@
 
 
 {% block collection_header %}
-{% with "alignment" as current %}
+{% with "import" as current %}
 {{ block.super }}
 {% endwith %}
 {% endblock %}
@@ -15,10 +15,14 @@
 
 {% block collection_content %}
 
+<form action="" method="post" class="form">
+{{ form }}
+</form>
+
 {% endblock %}
 
 {% block collection_footer %}
-{% with "alignment" as current %}
+{% with "import" as current %}
 {{ block.super }}
 {% endwith %}
 {% endblock %}

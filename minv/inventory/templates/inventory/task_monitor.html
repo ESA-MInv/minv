@@ -34,10 +34,10 @@
   <tr>
     <td>{{ task.id }}</td>
     <td>{{ task.name }}</td>
-    <td>{{ task.start_time|date:"c" }}</td>
-    <td>{{ task.end_time|date:"c" }}</td>
+    <td>{{ task.start_time|date:'Y-m-d H:i' }}</td>
+    <td>{{ task.end_time|date:'Y-m-d H:i' }}</td>
     <td>{% if task.run_time %}{{ task.run_time }}{% else %}-{% endif %}</td>
-    <td class="{% if task.status == 'pending' %}{% elif task.status == 'running' %}info{% elif task.status == 'finished' %}success{% elif task.status == 'failed' %}danger{% endif %}"><span class="glyphicon glyphicon-{% if task.status == 'pending' %}pause{% elif task.status == 'running' %}play{% elif task.status == 'finished' %}ok{% elif task.status == 'failed' %}ban-circle{% endif %}" aria-hidden="true"></span></td>
+    <td class="{% if task.status == 'pending' %}{% elif task.status == 'running' %}info{% elif task.status == 'finished' %}success{% elif task.status == 'failed' %}danger{% endif %}"  style="text-align: center;"><span class="glyphicon glyphicon-{% if task.status == 'pending' %}pause{% elif task.status == 'running' %}play{% elif task.status == 'finished' %}ok{% elif task.status == 'failed' %}ban-circle{% endif %}" aria-hidden="true"></span></td>
   </tr>
   {% endfor %}
 </table>

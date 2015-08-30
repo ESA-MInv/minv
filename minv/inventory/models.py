@@ -34,7 +34,7 @@ class Collection(models.Model):
     file_type = models.CharField(max_length=512)
 
     def __unicode__(self):
-        return "Collection %s/%s" % (self.mission, self.file_type)
+        return "%s/%s" % (self.mission, self.file_type)
 
     def get_metadata_field_mapping(self):
         return dict(
