@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from django.db import models
+from django.utils.timezone import now
 
 
 def uuid_default():
@@ -28,4 +29,6 @@ class Task(models.Model):
     def run_time(self):
         if self.end_time:
             return self.end_time - self.start_time
+        elif self.status == "running":
+            return now() - self.start_time
         return None
