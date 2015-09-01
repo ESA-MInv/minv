@@ -140,15 +140,17 @@ $(function() {
     map.addInteraction(dragBox);
     dragBox.setActive(false);
 
-
+    // activate/deactivate bbox drawing
     $target.find(".enable-draw").change(function() {
       dragBox.setActive($(this).is(":checked"));
     });
 
+    // starting drawing a box
     dragBox.on('boxstart', function() {
       vectorSource.clear();
     });
 
+    // finished drawing a box
     dragBox.on('boxend', function() {
       var geom = dragBox.getGeometry();
       var feature = new ol.Feature();
@@ -162,6 +164,7 @@ $(function() {
       $parent.find("input[role='maxlon']").val(extent[2]);
     });
     
+    // listen on changes in the adjacent inputs
     $parent.find('input[type="text"]').change(function() {
       vectorSource.clear();
       var minlat = parseFloat($parent.find("input[role='minlat']").val());
@@ -180,6 +183,11 @@ $(function() {
       var feature = new ol.Feature();
       feature.setGeometry(polygon);
       vectorSource.addFeature(feature);
+    });
+
+    // shim to work around invisibility bug in Bootstrap tabs
+    $("a[data-toggle='tab'][href='#parameters']").on("shown.bs.tab", function() {
+      map.setTarget(target);
     });
 
     return map;
