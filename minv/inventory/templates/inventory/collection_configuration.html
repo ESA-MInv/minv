@@ -7,7 +7,7 @@
 
 
 {% block collection_header %}
-{% with "export" as current %}
+{% with "configuration" as current %}
 {{ block.super }}
 {% endwith %}
 {% endblock %}
@@ -15,9 +15,10 @@
 
 {% block collection_content %}
 
-<form action="{% url 'inventory:collection-export' mission=collection.mission file_type=collection.file_type %}" method="post" class="form form-horizontal">
-  {% csrf_token %}
-  {% for field in form %}
+<form action="" method="post" class="form-horizontal">
+{% csrf_token %}
+
+{% for field in configuration_form %}
   <div class="form-group {% if field.errors %}has-error{% endif %}">
     <label for="{{ field.id_for_label }}" class="col-sm-2 control-label">{{ field.label_tag }}</label>
     <div class="input-group col-sm-8">
@@ -32,28 +33,36 @@
       <span class="help-block col-sm-offset-2">{{ error }}</span>
     {% endfor %}
   </div>
-  {% endfor %}
-  <div class="form-group">
-    <div class="col-sm-offset-2 col-sm-10">
-      <button type="submit" class="btn btn-default">Export</button>
-    </div>
-  </div>
-</form>
+{% endfor %}
 
-<div class="panel panel-default">
-  <div class="panel-heading">Download Export Packages</div>
-  <div class="panel-body">
-    <ul>
-      <li><a href="#">export_20150829.ZIP</a></li>
-    </ul>
+{{ mapping_formset.management_form }}
+
+<div class="form-group {% if field.errors %}has-error{% endif %}">
+  <label class="col-sm-2 control-label">Metadata Mapping:</label>
+  <div class="input-group col-sm-8">
+    {% for form in mapping_formset %}
+      <ul>
+        <li>{{ form.index_file_key }}</li>
+        <li>{{ form.search_key }}</li>
+        {% if formset.can_delete %}
+            <li>{{ form.DELETE }}</li>
+        {% endif %}
+      </ul>
+    {% endfor %}
   </div>
 </div>
 
+<div class="form-group">
+  <div class="col-sm-offset-2 col-sm-10">
+    <button type="submit" class="btn btn-default">Save</button>
+  </div>
+</div>
+</form>
 
 {% endblock %}
 
 {% block collection_footer %}
-{% with "export" as current %}
+{% with "configuration" as current %}
 {{ block.super }}
 {% endwith %}
 {% endblock %}

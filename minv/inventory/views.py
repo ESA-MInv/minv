@@ -1,7 +1,14 @@
+from os.path import join
+from ConfigParser import RawConfigParser
+import json
+
 from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.shortcuts import redirect
 from django.contrib import messages
+from django.conf import settings
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 
 from inventory import models
 from inventory import forms
@@ -10,7 +17,37 @@ from monitor import models as monitor_models
 # Create your views here.
 
 
-def collection_list(request):
+def login_view(request):
+    logout(request)
+    username = password = ''
+    if request.POST:
+        username = request.POST['username']
+        password = request.POST['password']
+
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            if user.is_active:
+                login(request, user)
+                return redirect('inventory:collection-list')
+    return render(request, 'inventory/login.html')
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('inventory:collection-list')
+
+
+@login_required(login_url="/login/")
+def root_view(request):
+    return render(
+        request, "inventory/root.html", {
+            "collections": models.Collection.objects.all()
+        }
+    )
+
+
+@login_required(login_url="/login/")
+def collection_list_view(request):
     return render(
         request, "inventory/collection_list.html", {
             "collections": models.Collection.objects.all()
@@ -18,7 +55,8 @@ def collection_list(request):
     )
 
 
-def collection_detail(request, mission, file_type):
+@login_required(login_url="/login/")
+def collection_detail_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -30,7 +68,8 @@ def collection_detail(request, mission, file_type):
     )
 
 
-def collection_harvest(request, mission, file_type):
+@login_required(login_url="/login/")
+def collection_harvest_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -54,7 +93,8 @@ def collection_harvest(request, mission, file_type):
     )
 
 
-def collection_search(request, mission, file_type):
+@login_required(login_url="/login/")
+def collection_search_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -70,6 +110,8 @@ def collection_search(request, mission, file_type):
                 if value is None or value == "":
                     continue
                 if key == "locations":
+                    if not value:
+                        continue
                     filter_ = {"location__in": value}
                 elif isinstance(value, list):
                     low, high = value
@@ -89,7 +131,7 @@ def collection_search(request, mission, file_type):
 
                 qs = qs.filter(**filter_)
 
-        records = Paginator(qs, records_per_page).page(page or 1)
+            records = Paginator(qs, records_per_page).page(page or 1)
 
     else:
         form = forms.RecordSearchForm(
@@ -106,17 +148,18 @@ def collection_search(request, mission, file_type):
     )
 
 
-def collection_alignment(request, mission, file_type):
+@login_required(login_url="/login/")
+def collection_alignment_view(request, mission, file_type):
+    collection = models.Collection.objects.get(
+        mission=mission, file_type=file_type
+    )
     if request.method == "POST":
         form = forms.AlignmentForm(request.POST)
         if form.is_valid():
             # print form.cleaned_data
             pass
     else:
-        form = forms.RecordSearchForm()
-    collection = models.Collection.objects.get(
-        mission=mission, file_type=file_type
-    )
+        form = forms.RecordSearchForm(collection.locations.all())
     return render(
         request, "inventory/collection_alignment.html", {
             "collections": models.Collection.objects.all(),
@@ -125,7 +168,8 @@ def collection_alignment(request, mission, file_type):
     )
 
 
-def collection_export(request, mission, file_type):
+@login_required(login_url="/login/")
+def collection_export_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -133,9 +177,13 @@ def collection_export(request, mission, file_type):
     if request.method == "POST":
         form = forms.ImportExportBaseForm(request.POST)
         if form.is_valid():
-            messages.info(request, "Started export for collection %s" % collection)
+            messages.info(request,
+                "Started export for collection %s" % collection
+            )
         else:
-            messages.error(request, "Failed to start export for collection %s" % collection)
+            messages.error(request,
+                "Failed to start export for collection %s" % collection
+            )
         return redirect("inventory:collection-export",
             mission=mission, file_type=file_type
         )
@@ -149,7 +197,8 @@ def collection_export(request, mission, file_type):
     )
 
 
-def collection_import(request, mission, file_type):
+@login_required(login_url="/login/")
+def collection_import_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -162,7 +211,58 @@ def collection_import(request, mission, file_type):
     )
 
 
-def task_monitor(request):
+@login_required(login_url="/login/")
+def collection_configuration_view(request, mission, file_type):
+    """ View function to provide a change form for the collections configuration.
+    For the metadata mapping a seperate formset is used.
+    """
+    collection = models.Collection.objects.get(
+        mission=mission, file_type=file_type
+    )
+
+    with open(join(settings.BASE_DIR, "minv/minv.conf")) as f:
+        parser = RawConfigParser()
+        parser.readfp(f)
+
+    if request.method == "POST":
+        configuration_form = forms.CollectionConfigurationForm(request.POST)
+        mapping_formset = forms.MetadataMappingFormset(request.POST)
+        if configuration_form.is_valid() and mapping_formset.is_valid():
+            for key, value in configuration_form.cleaned_data.items():
+                parser.set("inventory", key, value)
+            with open(join(settings.BASE_DIR, "minv/minv.conf"), "w") as f:
+                parser.write(f)
+
+            mapping = {}
+            for form in mapping_formset:
+                if form.is_valid():  # and not form.has_changed():
+                    data = form.cleaned_data
+                    mapping[data["search_key"]] = data["index_file_key"]
+
+            with open(join(settings.BASE_DIR, "minv/mapping.json"), "w") as f:
+                json.dump(mapping, f, indent=2)
+    else:
+        configuration_form = forms.CollectionConfigurationForm(
+            initial=dict(parser.items("inventory"))
+        )
+        with open(join(settings.BASE_DIR, "minv/mapping.json")) as f:
+            data = json.load(f)
+            initial = [
+                {"search_key": key, "index_file_key": value}
+                for key, value in data.items()
+            ]
+        mapping_formset = forms.MetadataMappingFormset(initial=initial)
+    return render(
+        request, "inventory/collection_configuration.html", {
+            "collections": models.Collection.objects.all(),
+            "collection": collection, "configuration_form": configuration_form,
+            "mapping_formset": mapping_formset
+        }
+    )
+
+
+@login_required(login_url="/login/")
+def task_monitor_view(request):
     qs = monitor_models.Task.objects.all().order_by("start_time")
     if request.method == "POST":
         form = forms.TaskFilterForm(request.POST)

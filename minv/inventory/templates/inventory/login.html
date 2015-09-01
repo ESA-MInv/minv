@@ -1,0 +1,27 @@
+{% load staticfiles %}
+<html>
+<head>
+  <link rel="stylesheet" href="{% static 'inventory/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'inventory/css/bootstrap-theme.min.css' %}">
+  <link rel="stylesheet" href="{% static 'inventory/css/login.css' %}">
+</head>
+
+<body>
+  <div class="container">
+    <form class="form-signin" action="/login/" method="post">
+    {% csrf_token %}
+    {% if next %}
+      <input type="hidden" name="next" value="{{ next }}" />
+    {% endif %}
+      <h2 class="form-signin-heading">Please log in</h2>
+      <label for="inputEmail" class="sr-only">Email address</label>
+      <input type="username" name="username" id="username" class="form-control" placeholder="Username" required autofocus>
+      <label for="inputPassword" class="sr-only">Password</label>
+      <input type="password" name="password" id="password" class="form-control" placeholder="Password" required>
+      <button class="btn btn-lg btn-primary btn-block" type="submit">Log in</button>
+    </form>
+
+  </div>
+</body>
+
+</html>

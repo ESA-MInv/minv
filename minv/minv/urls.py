@@ -1,17 +1,11 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 
-from inventory.urls import urls as inventory_urls
+from inventory.urls import urlpatterns as inventory_urlpatterns
 
-
-print admin.site.urls
-print inventory_urls
 
 urlpatterns = patterns('',
-    # Examples:
-    # url(r'^$', 'minv.views.home', name='home'),
-    # url(r'^blog/', include('blog.urls')),
-
     url(r'^admin/', include(admin.site.urls)),
-    url(r'', include(inventory_urls))
+    url(r'^', include(inventory_urlpatterns)),
+    url('^', include('django.contrib.auth.urls')),
 )

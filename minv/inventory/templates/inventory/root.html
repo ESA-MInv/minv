@@ -1,0 +1,14 @@
+{% extends "inventory/base.html" %}
+
+{% block content %}
+
+<h1>MInv - Master Inventory</h1>
+
+
+<ul>
+  <li><a href="{% url 'inventory:collection-list' %}">Collection List</a></li>
+  <li><a href="{% url 'inventory:task-monitor' %}">Monitor</a></li>
+  <li><a href="{% url 'admin:index' %}">Admin</a></li>
+</ul>
+
+{% endblock %}

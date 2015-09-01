@@ -15,8 +15,29 @@
 
 {% block collection_content %}
 
-<form action="" method="post" class="form">
-{{ form }}
+<form action="{% url 'inventory:collection-import' mission=collection.mission file_type=collection.file_type %}" method="post" class="form form-horizontal">
+  {% csrf_token %}
+  {% for field in form %}
+  <div class="form-group {% if field.errors %}has-error{% endif %}">
+    <label for="{{ field.id_for_label }}" class="col-sm-2 control-label">{{ field.label_tag }}</label>
+    <div class="input-group col-sm-8">
+      {{ field }}
+      {% if not field.field.choices %}
+      <span class="input-group-btn">
+        <button class="btn btn-default btn-sm" type="button" role="clear-button">Clear</button>
+      </span>
+      {% endif %}
+    </div>
+    {% for error in field.errors %}
+      <span class="help-block col-sm-offset-2">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-10">
+      <button type="submit" class="btn btn-default">Import</button>
+    </div>
+  </div>
 </form>
 
 {% endblock %}

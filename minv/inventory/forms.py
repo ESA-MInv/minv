@@ -1,7 +1,8 @@
 from django import forms
 from django.db import models
 from django.utils.translation import ugettext as _
-from django.core.validators import ValidationError
+from django.core.validators import ValidationError, RegexValidator
+from django.forms.formsets import formset_factory
 
 from inventory import models as inventory_models
 
@@ -87,12 +88,11 @@ class RecordSearchForm(forms.Form):
         """
         super(RecordSearchForm, self).__init__(*args, **kwargs)
         self.fields["locations"] = forms.MultipleChoiceField(
+            required=False,
             choices=[(location.id, str(location)) for location in locations],
             widget=forms.CheckboxSelectMultiple
         )
         for field in inventory_models.Record._meta.fields:
-            # TODO: make ranges
-
             if isinstance(field, models.IntegerField):
                 self.fields[field.name] = RangeField(
                     forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
@@ -145,6 +145,31 @@ class ImportForm(ImportExportBaseForm):
             widget=forms.Select(attrs={"class": "form-control"})
         )
 
+DURATION_REGEX = (
+    "P(?=\w*\d)(?:\d+Y|Y)?(?:\d+M|M)?(?:\d+W|W)?(?:\d+D|D)?(?:T(?:\d+H|H)?(?:\d+M|M)?(?:\d+(?:\.\d{1,2})?S|S)?)?$"
+)
+
+
+class CollectionConfigurationForm(forms.Form):
+    harvest_interval = forms.CharField(required=False,
+        widget=forms.TextInput(attrs=attrs),
+        validators=[RegexValidator(DURATION_REGEX)]
+    )
+    export_interval = forms.CharField(required=False,
+        widget=forms.TextInput(attrs=attrs),
+        validators=[RegexValidator(DURATION_REGEX)]
+    )
+
+
+class MetadataFieldMappingForm(forms.Form):
+    index_file_key = forms.CharField()
+    search_key = forms.ChoiceField(choices=inventory_models.SEARCH_FIELD_CHOICES)
+
+
+MetadataMappingFormset = formset_factory(
+    MetadataFieldMappingForm, can_delete=True
+)
+
 
 class TaskFilterForm(forms.Form):
     status = forms.ChoiceField(required=False, choices=((None, "All"),
@@ -152,4 +177,6 @@ class TaskFilterForm(forms.Form):
                                                         ("running", "Running"),
                                                         ("finished", "Finished"),
                                                         ("failed", "Failed")),
-                               widget=forms.Select(attrs={"class": "form-control"}))
+                               widget=forms.Select(
+                                   attrs={"class": "form-control"})
+                               )
