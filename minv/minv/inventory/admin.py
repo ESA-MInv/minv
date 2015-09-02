@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-import models
+from minv.inventory import models
 
 
 class MetadataFieldMappingInline(admin.TabularInline):

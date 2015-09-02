@@ -2,7 +2,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from inventory.ingest import ingest
+from minv.inventory.ingest import ingest
 
 
 class Command(BaseCommand):

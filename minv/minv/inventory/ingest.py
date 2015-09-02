@@ -7,8 +7,8 @@ from django.utils.dateparse import parse_datetime
 from django.utils.timezone import utc
 from django.db import models
 
-from inventory.models import Collection, Location, Record, IndexFile
-from monitor.tasks import monitor
+from minv.inventory.models import Collection, Location, Record, IndexFile
+from minv.monitor.tasks import monitor
 
 
 def parse_index_time(value):

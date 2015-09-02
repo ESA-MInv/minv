@@ -2,7 +2,7 @@ from json import dumps
 
 from django.utils.timezone import now
 
-from monitor import models
+from minv.monitor import models
 
 
 def monitor(name, **kwargs):

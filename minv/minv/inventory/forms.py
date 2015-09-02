@@ -4,7 +4,7 @@ from django.utils.translation import ugettext as _
 from django.core.validators import ValidationError, RegexValidator
 from django.forms.formsets import formset_factory
 
-from inventory import models as inventory_models
+from minv.inventory import models as inventory_models
 
 
 class RangeWidget(forms.MultiWidget):

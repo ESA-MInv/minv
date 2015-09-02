@@ -1,7 +1,7 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 
-from inventory.urls import urlpatterns as inventory_urlpatterns
+from minv.inventory.urls import urlpatterns as inventory_urlpatterns
 
 
 urlpatterns = patterns('',

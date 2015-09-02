@@ -10,9 +10,9 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 
-from inventory import models
-from inventory import forms
-from monitor import models as monitor_models
+from minv.inventory import models
+from minv.inventory import forms
+from minv.monitor import models as monitor_models
 
 # Create your views here.
 
@@ -220,7 +220,7 @@ def collection_configuration_view(request, mission, file_type):
         mission=mission, file_type=file_type
     )
 
-    with open(join(settings.BASE_DIR, "minv/minv.conf")) as f:
+    with open(join(settings.BASE_DIR, "minv_prototype/minv.conf")) as f:
         parser = RawConfigParser()
         parser.readfp(f)
 
@@ -230,7 +230,7 @@ def collection_configuration_view(request, mission, file_type):
         if configuration_form.is_valid() and mapping_formset.is_valid():
             for key, value in configuration_form.cleaned_data.items():
                 parser.set("inventory", key, value)
-            with open(join(settings.BASE_DIR, "minv/minv.conf"), "w") as f:
+            with open(join(settings.BASE_DIR, "minv_prototype/minv.conf"), "w") as f:
                 parser.write(f)
 
             mapping = {}
@@ -239,13 +239,13 @@ def collection_configuration_view(request, mission, file_type):
                     data = form.cleaned_data
                     mapping[data["search_key"]] = data["index_file_key"]
 
-            with open(join(settings.BASE_DIR, "minv/mapping.json"), "w") as f:
+            with open(join(settings.BASE_DIR, "minv_prototype/mapping.json"), "w") as f:
                 json.dump(mapping, f, indent=2)
     else:
         configuration_form = forms.CollectionConfigurationForm(
             initial=dict(parser.items("inventory"))
         )
-        with open(join(settings.BASE_DIR, "minv/mapping.json")) as f:
+        with open(join(settings.BASE_DIR, "minv_prototype/mapping.json")) as f:
             data = json.load(f)
             initial = [
                 {"search_key": key, "index_file_key": value}

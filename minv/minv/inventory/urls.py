@@ -1,5 +1,5 @@
 from django.conf.urls import url, include
-from inventory import views
+from minv.inventory import views
 
 
 urlpatterns = ([

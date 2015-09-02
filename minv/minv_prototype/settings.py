@@ -36,8 +36,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'inventory',
-    'monitor',
+    'minv.inventory',
+    'minv.monitor',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -50,9 +50,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'minv.urls'
+ROOT_URLCONF = 'minv_prototype.urls'
 
-WSGI_APPLICATION = 'minv.wsgi.application'
+WSGI_APPLICATION = 'minv_prototype.wsgi.application'
 
 
 # Database
