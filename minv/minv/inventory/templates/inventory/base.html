@@ -43,7 +43,7 @@
       </ul>
       <ul class="nav navbar-nav navbar-right">
         <li><a>Logged in as {{ user }}</a></li>
-        <li><a href="{% url 'inventory:logout' %}">Logout</a></li>
+        <li><a href="{% url 'inventory:logout' %}?next={{ request.get_full_path }}">Logout</a></li>
       </ul>
     </div>
   </nav>

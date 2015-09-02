@@ -23,21 +23,29 @@ def login_view(request):
     if request.POST:
         username = request.POST['username']
         password = request.POST['password']
+        next_ = request.POST.get('next')
 
         user = authenticate(username=username, password=password)
         if user is not None:
             if user.is_active:
                 login(request, user)
-                return redirect('inventory:collection-list')
-    return render(request, 'inventory/login.html')
+                if next_:
+                    return redirect(next_)
+                return redirect('inventory:root')
+    return render(
+        request, 'inventory/login.html', {"next": request.GET.get("next")}
+    )
 
 
 def logout_view(request):
     logout(request)
-    return redirect('inventory:collection-list')
+    next_ = request.GET.get("next")
+    if next_:
+        return redirect(next_)
+    return redirect('inventory:root')
 
 
-@login_required(login_url="/login/")
+@login_required(login_url="login")
 def root_view(request):
     return render(
         request, "inventory/root.html", {
@@ -46,7 +54,7 @@ def root_view(request):
     )
 
 
-@login_required(login_url="/login/")
+@login_required(login_url="login")
 def collection_list_view(request):
     return render(
         request, "inventory/collection_list.html", {
@@ -55,7 +63,7 @@ def collection_list_view(request):
     )
 
 
-@login_required(login_url="/login/")
+@login_required(login_url="login")
 def collection_detail_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -68,7 +76,7 @@ def collection_detail_view(request, mission, file_type):
     )
 
 
-@login_required(login_url="/login/")
+@login_required(login_url="login")
 def collection_harvest_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -93,7 +101,7 @@ def collection_harvest_view(request, mission, file_type):
     )
 
 
-@login_required(login_url="/login/")
+@login_required(login_url="login")
 def collection_search_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -148,7 +156,7 @@ def collection_search_view(request, mission, file_type):
     )
 
 
-@login_required(login_url="/login/")
+@login_required(login_url="login")
 def collection_alignment_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -168,7 +176,7 @@ def collection_alignment_view(request, mission, file_type):
     )
 
 
-@login_required(login_url="/login/")
+@login_required(login_url="login")
 def collection_export_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -197,7 +205,7 @@ def collection_export_view(request, mission, file_type):
     )
 
 
-@login_required(login_url="/login/")
+@login_required(login_url="login")
 def collection_import_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -211,7 +219,7 @@ def collection_import_view(request, mission, file_type):
     )
 
 
-@login_required(login_url="/login/")
+@login_required(login_url="login")
 def collection_configuration_view(request, mission, file_type):
     """ View function to provide a change form for the collections configuration.
     For the metadata mapping a seperate formset is used.
@@ -261,7 +269,7 @@ def collection_configuration_view(request, mission, file_type):
     )
 
 
-@login_required(login_url="/login/")
+@login_required(login_url="login")
 def task_monitor_view(request):
     qs = monitor_models.Task.objects.all().order_by("start_time")
     if request.method == "POST":
