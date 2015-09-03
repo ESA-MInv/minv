@@ -115,7 +115,7 @@ class RecordSearchForm(forms.Form):
             elif isinstance(field, models.CharField):
                 if field.choices:
                     self.fields[field.name] = forms.ChoiceField(
-                        required=False, choices=((None, "---"),) + field.choices,
+                        required=False, choices=(("", "---"),) + field.choices,
                         widget=forms.Select(attrs=attrs)
                     )
                 else:
@@ -172,7 +172,7 @@ MetadataMappingFormset = formset_factory(
 
 
 class TaskFilterForm(forms.Form):
-    status = forms.ChoiceField(required=False, choices=((None, "All"),
+    status = forms.ChoiceField(required=False, choices=(("", "All"),
                                                         ("pending", "Pending"),
                                                         ("running", "Running"),
                                                         ("finished", "Finished"),

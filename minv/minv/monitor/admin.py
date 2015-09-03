@@ -11,6 +11,7 @@ def duration(task):
         return str(now() - task.start_time)
 
 
-@admin.register(models.Task)
 class TaskAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "status", duration)
+
+admin.site.register(models.Task, TaskAdmin)

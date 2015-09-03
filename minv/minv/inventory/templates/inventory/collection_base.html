@@ -42,7 +42,7 @@
 
 {% block collection_footer %}
 <ol class="breadcrumb">
-  <li><a href="/">Home</a></li>
+  <li><a href="{% url 'inventory:root' %}">Home</a></li>
   <li><a href="{% url 'inventory:collection-list' %}">Collections</a></li>
   {% if not current %}<li class="active">{{ collection }}</li>
   {% else %}

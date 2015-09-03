@@ -15,4 +15,10 @@
     <li><a href="{% url 'inventory:collection-detail' mission=collection.mission file_type=collection.file_type %}">{{ collection.mission }}/{{ collection.file_type }}</a></li>
 {% endfor %}
 </ul>
+
+<ol class="breadcrumb">
+  <li><a href="{% url 'inventory:root' %}">Home</a></li>
+  <li class="active">Collections</li>
+</ol>
+
 {% endblock %}

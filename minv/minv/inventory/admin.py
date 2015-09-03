@@ -26,7 +26,6 @@ def record_count(collection):
     return models.Record.objects.filter(location__collection=collection).count()
 
 
-@admin.register(models.Collection)
 class CollectionAdmin(admin.ModelAdmin):
     inlines = (LocationInline, MetadataFieldMappingInline)
     list_display = (
@@ -34,10 +33,13 @@ class CollectionAdmin(admin.ModelAdmin):
     )
     list_display_links = ("mission", "file_type")
 
+admin.site.register(models.Collection, CollectionAdmin)
 
-@admin.register(models.IndexFile)
+
 class IndexFileAdmin(admin.ModelAdmin):
     pass
+
+admin.site.register(models.IndexFile, IndexFileAdmin)
 
 
 class AnnotationInline(admin.TabularInline):
@@ -45,6 +47,7 @@ class AnnotationInline(admin.TabularInline):
     model = models.Annotation
 
 
-@admin.register(models.Record)
 class RecordAdmin(admin.ModelAdmin):
     inlines = (AnnotationInline,)
+
+admin.site.register(models.Record, RecordAdmin)
