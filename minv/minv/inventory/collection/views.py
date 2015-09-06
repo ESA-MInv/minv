@@ -16,7 +16,7 @@ from minv.inventory import forms
 @login_required(login_url="login")
 def list_view(request):
     return render(
-        request, "inventory/collection_list.html", {
+        request, "inventory/collection/list.html", {
             "collections": models.Collection.objects.all()
         }
     )
@@ -28,7 +28,7 @@ def detail_view(request, mission, file_type):
         mission=mission, file_type=file_type
     )
     return render(
-        request, "inventory/collection_detail.html", {
+        request, "inventory/collection/detail.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection
         }
@@ -108,7 +108,7 @@ def search_view(request, mission, file_type):
         )
 
     return render(
-        request, "inventory/collection_search.html", {
+        request, "inventory/collection/search.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection, "search_form": form,
             "pagination_form": pagination_form, "records": records
@@ -129,7 +129,7 @@ def alignment_view(request, mission, file_type):
     else:
         form = forms.RecordSearchForm(collection.locations.all())
     return render(
-        request, "inventory/collection_alignment.html", {
+        request, "inventory/collection/alignment.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection, "alignment_form": form
         }
@@ -158,7 +158,7 @@ def export_view(request, mission, file_type):
 
     form = forms.ImportExportBaseForm()
     return render(
-        request, "inventory/collection_export.html", {
+        request, "inventory/collection/export.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection, "form": form
         }
@@ -172,7 +172,7 @@ def import_view(request, mission, file_type):
     )
     form = forms.ImportForm((("export_20150829.dat", "export_20150829.dat"),))
     return render(
-        request, "inventory/collection_import.html", {
+        request, "inventory/collection/import.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection, "form": form
         }
@@ -221,7 +221,7 @@ def configuration_view(request, mission, file_type):
             ]
         mapping_formset = forms.MetadataMappingFormset(initial=initial)
     return render(
-        request, "inventory/collection_configuration.html", {
+        request, "inventory/collection/configuration.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection, "configuration_form": configuration_form,
             "mapping_formset": mapping_formset
