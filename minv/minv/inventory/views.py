@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.shortcuts import redirect
+from django.utils.timezone import now
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -89,7 +90,7 @@ def restore_view(request):
 
 
 @login_required(login_url="login")
-def task_monitor_view(request):
+def task_list_view(request):
     qs = monitor_models.Task.objects.all().order_by("start_time")
     if request.method == "POST":
         form = forms.TaskFilterForm(request.POST)
@@ -99,8 +100,49 @@ def task_monitor_view(request):
     else:
         form = forms.TaskFilterForm()
     return render(
-        request, "inventory/task_monitor.html", {
+        request, "inventory/task_list.html", {
             "collections": models.Collection.objects.all(),
             "tasks": qs, "filter_form": form
+        }
+    )
+
+
+@login_required(login_url="login")
+def task_view(request, task_id):
+    task = monitor_models.Task.objects.get(id=task_id)
+    if request.method == "POST":
+        form = forms.TaskActionForm(request.POST)
+        if form.is_valid():
+            action = form.cleaned_data["action"]
+            if action == "restart":
+                task.start_time = now()
+                task.end_time = None
+                task.status = "running"
+                task.full_clean()
+                task.save()
+                messages.info(request, "Task '%s' restarted." % task.id)
+            elif action == "abort":
+                if task.status != "running":
+                    messages.error(
+                        request, "Task '%s' was not running." % task.id
+                    )
+                else:
+                    task.status = "aborted"
+                    task.end_time = now()
+                    task.full_clean()
+                    task.save()
+                    messages.info(
+                        request, "Task '%s' aborted." % task.id
+                    )
+            elif action == "remove":
+                task.delete()
+                messages.info(request, "Task '%s' removed." % task.id)
+
+    else:
+        form = forms.TaskActionForm()
+    return render(
+        request, "inventory/task.html", {
+            "collections": models.Collection.objects.all(),
+            "task": task, "form": form
         }
     )

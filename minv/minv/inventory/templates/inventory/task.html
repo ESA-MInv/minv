@@ -1,0 +1,40 @@
+{% extends "inventory/base.html" %}
+
+{% block head %}
+{{ block.super }}
+{{ search_form.media }}
+{% endblock %}
+
+{% block content %}
+
+<nav class="navbar navbar-default">
+  <form method="post" action="{% url 'inventory:task' task_id=task.id %}" class="navbar-form navbar-left" role="search">
+    {% csrf_token %}
+    {% for short, long in form.action.field.choices %}
+    <button name="action" value="{{ short }}" class="btn btn-default">{{ long }}</button>
+    {% endfor %}
+  </form>
+</nav>
+
+<table class="table table-hover table-bordered">
+  <tr><td>ID</td><td>{{ task.id }}</td></tr>
+  <tr><td>Name</td><td>{{ task.name }}</td></tr>
+  <tr><td>Arguments</td><td>{{ task.arguments }}</td></tr>
+  <tr><td>Start time</td><td>{{ task.start_time|date:'Y-m-d H:i' }}</td></tr>
+  <tr><td>End time</td><td>{{ task.end_time|date:'Y-m-d H:i' }}</td></tr>
+  <tr><td>Run time</td><td>{% if task.run_time %}{{ task.run_time }}{% else %}-{% endif %}</td></tr>
+  <tr><td>status</td><td class="{% if task.status == 'pending' %}{% elif task.status == 'running' %}info{% elif task.status == 'finished' %}success{% elif task.status == 'failed' %}danger{% endif %}"  style="text-align: center;">{{ task.status }}</td></tr>
+  {% if task.status == "failed" %}
+  <tr><td>Error</td><td>{{ task.error }}</td></tr>
+  <tr><td>Stack trace</td><td>{{ task.traceback }}</td></tr>
+  {% endif %}
+  </tr>
+</table>
+
+<ol class="breadcrumb">
+  <li><a href="{% url 'inventory:root' %}">Home</a></li>
+  <li><a href="{% url 'inventory:task-list' %}">Monitor</a></li>
+  <li class="active">{{ task.id }}</li>
+</ol>
+
+{% endblock %}

@@ -5,6 +5,7 @@ from django.core.validators import ValidationError, RegexValidator
 from django.forms.formsets import formset_factory
 
 from minv.inventory import models as inventory_models
+from minv.monitor import models as monitor_models
 
 
 class RangeWidget(forms.MultiWidget):
@@ -206,11 +207,23 @@ MetadataMappingFormset = formset_factory(
 
 
 class TaskFilterForm(forms.Form):
-    status = forms.ChoiceField(required=False, choices=(("", "All"),
-                                                        ("pending", "Pending"),
-                                                        ("running", "Running"),
-                                                        ("finished", "Finished"),
-                                                        ("failed", "Failed")),
-                               widget=forms.Select(
-                                   attrs={"class": "form-control"})
-                               )
+    status = forms.ChoiceField(
+        required=False,
+        choices=(("", "All"), ("pending", "Pending"), ("running", "Running"),
+                 ("finished", "Finished"), ("failed", "Failed"),
+                 ("aborted", "Aborted")),
+        widget=forms.Select(
+            attrs={"class": "form-control"}
+        )
+    )
+
+
+class TaskActionForm(forms.Form):
+    action = forms.ChoiceField(
+        choices=(
+            ("restart", "Restart"), ("abort", "Abort"), ("remove", "Remove")
+        ),
+        widget=forms.Select(
+            attrs={"class": "form-control"}
+        )
+    )

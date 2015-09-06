@@ -16,7 +16,8 @@ class Task(models.Model):
     status = models.CharField(max_length=16, choices=(("pending", "Pending"),
                                                       ("running", "Running"),
                                                       ("finished", "Finished"),
-                                                      ("failed", "Failed")),
+                                                      ("failed", "Failed"),
+                                                      ("aborted", "Aborted")),
                               default="pending")
 
     error = models.TextField(null=True, blank=True)
