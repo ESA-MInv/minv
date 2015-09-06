@@ -76,13 +76,47 @@ date_attrs = {
 }
 
 
-class RecordSearchForm(forms.Form):
+class BackupForm(forms.Form):
+    backup_type = forms.ChoiceField(
+        choices=(
+            ("full", "full"), ("incremental", "incremental"),
+            ("decremental", "decremental")
+        ),
+        widget=forms.Select(attrs=attrs)
+    )
+    subject = forms.MultipleChoiceField(
+        choices=(
+            ("application", "application"), ("configuration", "configuration"),
+            ("logfiles", "logfiles")
+        ),
+        widget=forms.CheckboxSelectMultiple
+    )
+
+
+class RestoreForm(forms.Form):
+    backup = forms.ChoiceField(
+        choices=(
+            ("backup_20150906.dat", "backup_20150906.dat (full)"),
+            ("backup_20150907.dat", "backup_20150907.dat (incremental)"),
+            ("backup_20150908.dat", "backup_20150908.dat (incremental)"),
+            ("backup_20150909.dat", "backup_20150909.dat (incremental)"),
+            ("backup_20150910.dat", "backup_20150910.dat (decremental)"),
+            ("backup_20150911.dat", "backup_20150911.dat (full)"),
+            ("backup_20150912.dat", "backup_20150912.dat (incremental)"),
+        ),
+        widget=forms.Select(attrs=attrs)
+    )
+
+
+class PaginationForm(forms.Form):
+    page = forms.IntegerField(required=False, widget=forms.HiddenInput())
     records_per_page = forms.ChoiceField(
         required=False, choices=((5, "5"), (10, "10"), (15, "15"), (20, "20")),
         widget=forms.Select(attrs=attrs)
     )
-    page = forms.IntegerField(required=False, widget=forms.HiddenInput())
 
+
+class RecordSearchForm(forms.Form):
     def __init__(self, locations, *args, **kwargs):
         """ Dynamically create form fields for eligible model fields.
         """

@@ -48,6 +48,26 @@ def root_view(request):
 
 
 @login_required(login_url="login")
+def backup_view(request):
+    return render(
+        request, "inventory/backup.html", {
+            "collections": models.Collection.objects.all(),
+            "form": forms.BackupForm()
+        }
+    )
+
+
+@login_required(login_url="login")
+def restore_view(request):
+    return render(
+        request, "inventory/restore.html", {
+            "collections": models.Collection.objects.all(),
+            "form": forms.RestoreForm()
+        }
+    )
+
+
+@login_required(login_url="login")
 def task_monitor_view(request):
     qs = monitor_models.Task.objects.all().order_by("start_time")
     if request.method == "POST":

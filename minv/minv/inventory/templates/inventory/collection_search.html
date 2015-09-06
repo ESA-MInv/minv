@@ -1,5 +1,6 @@
 {% extends "inventory/collection_base.html" %}
-{% load staticfiles%}
+{% load staticfiles %}
+{% load inventory_extras %}
 
 {% block head %}
 <script src="{% static 'inventory/js/ol.js' %}"></script>
@@ -53,26 +54,8 @@
           </div>
         </div>
       </div>
-      {% for field in search_form %}
-      {% if field.name != "page" %}
-        <div class="form-group {% if field.errors %}has-error{% endif %}">
-          <label for="{{ field.id_for_label }}" class="col-sm-2 control-label">{{ field.label_tag }}</label>
-          <div class="input-group col-sm-8">
-            {{ field }}
-            {% if not field.field.choices %}
-            <span class="input-group-btn">
-              <button class="btn btn-default btn-sm" type="button" role="clear-button">Clear</button>
-            </span>
-            {% endif %}
-          </div>
-          {% for error in field.errors %}
-            <span class="help-block col-sm-offset-2">{{ error }}</span>
-          {% endfor %}
-        </div>
-      {% else %}
-        {{ field }}
-      {% endif %}
-      {% endfor %}
+      {% render_form pagination_form %}
+      {% render_form search_form %}
       <div class="form-group">
         <div class="col-sm-offset-2 col-sm-10">
           <button type="submit" class="btn btn-default">Search</button>

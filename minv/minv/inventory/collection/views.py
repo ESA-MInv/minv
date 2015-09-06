@@ -14,7 +14,7 @@ from minv.inventory import forms
 
 
 @login_required(login_url="login")
-def collection_list_view(request):
+def list_view(request):
     return render(
         request, "inventory/collection_list.html", {
             "collections": models.Collection.objects.all()
@@ -23,7 +23,7 @@ def collection_list_view(request):
 
 
 @login_required(login_url="login")
-def collection_detail_view(request, mission, file_type):
+def detail_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -36,7 +36,7 @@ def collection_detail_view(request, mission, file_type):
 
 
 @login_required(login_url="login")
-def collection_harvest_view(request, mission, file_type):
+def harvest_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -61,7 +61,7 @@ def collection_harvest_view(request, mission, file_type):
 
 
 @login_required(login_url="login")
-def collection_search_view(request, mission, file_type):
+def search_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -69,10 +69,9 @@ def collection_search_view(request, mission, file_type):
     records = None
     if request.method == "POST":
         form = forms.RecordSearchForm(collection.locations.all(), request.POST)
-        if form.is_valid():
+        pagination_form = forms.PaginationForm(request.POST)
+        if form.is_valid() and pagination_form.is_valid():
             qs = models.Record.objects.filter(location__collection=collection)
-            page = form.cleaned_data.pop("page")
-            records_per_page = form.cleaned_data.pop("records_per_page")
             for key, value in form.cleaned_data.items():
                 if value is None or value == "":
                     continue
@@ -98,11 +97,13 @@ def collection_search_view(request, mission, file_type):
 
                 qs = qs.filter(**filter_)
 
-            records = Paginator(qs, records_per_page).page(page or 1)
+            page = pagination_form.cleaned_data.pop("page")
+            per_page = pagination_form.cleaned_data.pop("records_per_page")
+            records = Paginator(qs, per_page).page(page)
 
     else:
-        form = forms.RecordSearchForm(
-            collection.locations.all(),
+        form = forms.RecordSearchForm(collection.locations.all())
+        pagination_form = forms.PaginationForm(
             initial={'page': '1', 'records_per_page': '15'}
         )
 
@@ -110,13 +111,13 @@ def collection_search_view(request, mission, file_type):
         request, "inventory/collection_search.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection, "search_form": form,
-            "records": records
+            "pagination_form": pagination_form, "records": records
         }
     )
 
 
 @login_required(login_url="login")
-def collection_alignment_view(request, mission, file_type):
+def alignment_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -136,7 +137,7 @@ def collection_alignment_view(request, mission, file_type):
 
 
 @login_required(login_url="login")
-def collection_export_view(request, mission, file_type):
+def export_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -165,7 +166,7 @@ def collection_export_view(request, mission, file_type):
 
 
 @login_required(login_url="login")
-def collection_import_view(request, mission, file_type):
+def import_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -179,7 +180,7 @@ def collection_import_view(request, mission, file_type):
 
 
 @login_required(login_url="login")
-def collection_configuration_view(request, mission, file_type):
+def configuration_view(request, mission, file_type):
     """ View function to provide a change form for the collections configuration.
     For the metadata mapping a seperate formset is used.
     """
