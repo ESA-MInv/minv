@@ -1,0 +1,6 @@
+include README
+include MANIFEST.in
+graft minv
+recursive-include minv *.py *.html *.js *.css *.eot *.svg *.woff *.woff2 *.ttf
+recursive-exclude minv *.pyc .DS_Store
+recursive-exclude minv_prototype *
