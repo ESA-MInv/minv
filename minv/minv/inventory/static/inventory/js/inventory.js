@@ -2,31 +2,33 @@
 
 $(function() {
 
-  /* OL 3 control to enable/disable drawing of the BBox */
-  var EnableBBoxDraw = function(options) {
-    options = options || {};
+  if (typeof ol !== "undefined") {
+    /* OL 3 control to enable/disable drawing of the BBox */
+    var EnableBBoxDraw = function(options) {
+      options = options || {};
 
-    var checkbox = document.createElement('input');
-    checkbox.className = 'enable-draw';
-    checkbox.setAttribute('type', 'checkbox');
-    checkbox.checked = false;
+      var checkbox = document.createElement('input');
+      checkbox.className = 'enable-draw';
+      checkbox.setAttribute('type', 'checkbox');
+      checkbox.checked = false;
 
-    var inner = document.createElement('div');
-    inner.appendChild(document.createTextNode("draw bbox"));
-    inner.appendChild(checkbox);
+      var inner = document.createElement('div');
+      inner.appendChild(document.createTextNode("draw bbox"));
+      inner.appendChild(checkbox);
 
-    var element = document.createElement('div');
-    element.className = 'ol-unselectable ol-control enable-draw-control';
-    element.appendChild(inner);
+      var element = document.createElement('div');
+      element.className = 'ol-unselectable ol-control enable-draw-control';
+      element.appendChild(inner);
 
-    /* events are caught outside of this scope */
+      /* events are caught outside of this scope */
 
-    ol.control.Control.call(this, {
-      element: element,
-      target: options.target
-    });
-  };
-  ol.inherits(EnableBBoxDraw, ol.control.Control);
+      ol.control.Control.call(this, {
+        element: element,
+        target: options.target
+      });
+    };
+    ol.inherits(EnableBBoxDraw, ol.control.Control);
+  }
 
   $('button[role="clear-button"]').click(function() {
     $(this).parent(/* span */).parent(/* input-group */).find("input, select").val("").trigger("change");
