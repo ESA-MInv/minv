@@ -6,6 +6,12 @@
 {{ search_form.media }}
 {% endblock %}
 
+{% block navbar %}
+{% with "backup" as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}
+
 {% block content %}
 
 <form action="{% url 'inventory:backup' %}" method="post" class="form form-horizontal">

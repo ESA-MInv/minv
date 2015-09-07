@@ -5,6 +5,11 @@
 {{ search_form.media }}
 {% endblock %}
 
+{% block navbar %}
+{% with "collections" as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}
 
 {% block content %}
 

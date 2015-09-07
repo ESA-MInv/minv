@@ -5,6 +5,12 @@
 {{ search_form.media }}
 {% endblock %}
 
+{% block navbar %}
+{% with "monitor" as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}
+
 {% block content %}
 
 <h1>Task Monitor</h1>

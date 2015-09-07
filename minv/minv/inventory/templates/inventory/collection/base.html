@@ -4,6 +4,11 @@
 {{ block.super }}
 {% endblock %}
 
+{% block navbar %}
+{% with "collections" as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}
 
 {% block content %}
 {% block collection_header %}
