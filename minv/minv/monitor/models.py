@@ -1,4 +1,5 @@
 from uuid import uuid4
+import json
 
 from django.db import models
 from django.utils.timezone import now
@@ -33,3 +34,7 @@ class Task(models.Model):
         elif self.status == "running":
             return now() - self.start_time
         return None
+
+    @property
+    def argument_values(self):
+        return json.loads(self.arguments)

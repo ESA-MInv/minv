@@ -19,11 +19,22 @@
 <table class="table table-hover table-bordered">
   <tr><td>ID</td><td>{{ task.id }}</td></tr>
   <tr><td>Name</td><td>{{ task.name }}</td></tr>
-  <tr><td>Arguments</td><td>{{ task.arguments }}</td></tr>
+  <tr>
+    <td>Arguments</td>
+    <td>
+      <table class="table table-condensed table-bordered" style="margin-bottom: 0px">
+        {% for key, value in task.argument_values.items %}
+          <tr>
+            <td>{{ key }}</td><td>{{ value }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    </td>
+  </tr>
   <tr><td>Start time</td><td>{{ task.start_time|date:'Y-m-d H:i' }}</td></tr>
   <tr><td>End time</td><td>{{ task.end_time|date:'Y-m-d H:i' }}</td></tr>
   <tr><td>Run time</td><td>{% if task.run_time %}{{ task.run_time }}{% else %}-{% endif %}</td></tr>
-  <tr><td>status</td><td class="{% if task.status == 'pending' %}{% elif task.status == 'running' %}info{% elif task.status == 'finished' %}success{% elif task.status == 'failed' %}danger{% endif %}"  style="text-align: center;">{{ task.status }}</td></tr>
+  <tr><td>Status</td><td class="{% if task.status == 'pending' %}{% elif task.status == 'running' %}info{% elif task.status == 'finished' %}success{% elif task.status == 'failed' %}danger{% endif %}">{{ task.status }}</td></tr>
   {% if task.status == "failed" %}
   <tr><td>Error</td><td>{{ task.error }}</td></tr>
   <tr><td>Stack trace</td><td>{{ task.traceback }}</td></tr>
