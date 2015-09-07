@@ -36,24 +36,6 @@
           <button type="submit" class="btn btn-default">Search</button>
         </div>
       </div>
-      <div class="form-group {% if field.errors %}has-error{% endif %}">
-        <label class="col-sm-2 control-label">Area:</label>
-        <div class="input-group col-sm-8">
-          <div data-map="area"></div>
-          <div class="input-group">
-            <input type="text" name="minlat" class="form-control input-sm">
-            <span class="input-group-addon">-</span>
-            <input type="text" name="minlon" class="form-control input-sm">
-            <span class="input-group-addon">-</span>
-            <input type="text" name="maxlat" class="form-control input-sm">
-            <span class="input-group-addon">-</span>
-            <input type="text" name="maxlon" class="form-control input-sm">
-            <span class="input-group-btn">
-              <button class="btn btn-default btn-sm" type="button" role="clear-button">Clear</button>
-            </span>
-          </div>
-        </div>
-      </div>
       {% render_form pagination_form %}
       {% render_form search_form %}
       <div class="form-group">
@@ -61,7 +43,6 @@
           <button type="submit" class="btn btn-default">Search</button>
         </div>
       </div>
-      
     </div>
     <div role="tabpanel" class="tab-pane {% if not records == None %}active{% endif %}" id="results">
       {% if not records %}

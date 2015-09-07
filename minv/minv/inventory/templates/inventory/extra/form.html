@@ -2,18 +2,13 @@
   {{ field }}
 {% endfor %}
 {% for field in form.visible_fields %}
-  <div class="form-group {% if field.errors %}has-error{% endif %}">
-    <label for="{{ field.id_for_label }}" class="col-sm-2 control-label">{{ field.label_tag }}</label>
-    <div class="input-group col-sm-8">
+  <div class="form-group form-group-sm {% if field.errors %}has-error{% endif %}">
+    <label for="{{ field.id_for_label }}" class="col-xs-2 control-label">{{ field.label_tag }}</label>
+    <div class="input-group col-xs-10">
       {{ field }}
-      {% if not field.field.choices %}
-      <span class="input-group-btn">
-        <button class="btn btn-default btn-sm" type="button" role="clear-button">Clear</button>
-      </span>
-      {% endif %}
     </div>
     {% for error in field.errors %}
-      <span class="help-block col-sm-offset-2">{{ error }}</span>
+      <span class="help-block col-xs-offset-2">{{ error }}</span>
     {% endfor %}
   </div>
 {% endfor %}

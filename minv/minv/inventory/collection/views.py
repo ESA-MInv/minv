@@ -80,17 +80,21 @@ def search_view(request, mission, file_type):
                         continue
                     filter_ = {"location__in": value}
                 elif isinstance(value, list):
-                    low, high = value
-                    if key == "acquisition_date":
-                        key_low = "begin_date"
-                        key_high = "end_date"
-                    else:
-                        key_low = key
-                        key_high = key
+                    if len(value) == 2:
+                        low, high = value
+                        if key == "acquisition_date":
+                            key_low = "begin_date"
+                            key_high = "end_date"
+                        else:
+                            key_low = key
+                            key_high = key
 
-                    filter_ = {
-                        "%s__lte" % key_low: high, "%s__gte" % key_high: low
-                    }
+                        filter_ = {
+                            "%s__lte" % key_low: high, "%s__gte" % key_high: low
+                        }
+                    else:
+                        # TODO implement area filtering
+                        filter_ = {}
 
                 else:
                     filter_ = {key: value}

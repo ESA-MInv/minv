@@ -111,7 +111,7 @@ $(function() {
             style: "default",
             attributions: [
               new ol.Attribution({
-                html: "Data &copy; <a href=\"http://www.openstreetmap.org/copyright\" target=\"_blank\">OpenStreetMap</a> contributors and <a href=\"/map_attribution.html\">others</a>. Rendering &copy; <a href=\"http://maps.eox.at\" target=\"_blank\">EOX</a>."
+                html: 'Data &copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors and <a href=\"/map_attribution.html\">others</a>. Rendering &copy; <a href="http://maps.eox.at" target="_blank">EOX</a>.'
               })
             ],
           })
@@ -160,19 +160,19 @@ $(function() {
       vectorSource.addFeature(feature);
       var extent = geom.getExtent();
       
-      $parent.find("input[name='minlat']").val(extent[1]);
-      $parent.find("input[name='minlon']").val(extent[0]);
-      $parent.find("input[name='maxlat']").val(extent[3]);
-      $parent.find("input[name='maxlon']").val(extent[2]);
+      $parent.find('input[type="text"]:eq(0)').val(extent[1]);
+      $parent.find('input[type="text"]:eq(1)').val(extent[0]);
+      $parent.find('input[type="text"]:eq(2)').val(extent[3]);
+      $parent.find('input[type="text"]:eq(3)').val(extent[2]);
     });
     
     // listen on changes in the adjacent inputs
     $parent.find('input[type="text"]').change(function() {
       vectorSource.clear();
-      var minlat = parseFloat($parent.find("input[name='minlat']").val());
-      var minlon = parseFloat($parent.find("input[name='minlon']").val());
-      var maxlat = parseFloat($parent.find("input[name='maxlat']").val());
-      var maxlon = parseFloat($parent.find("input[name='maxlon']").val());
+      var minlat = parseFloat($parent.find('input[type="text"]:eq(0)').val());
+      var minlon = parseFloat($parent.find('input[type="text"]:eq(1)').val());
+      var maxlat = parseFloat($parent.find('input[type="text"]:eq(2)').val());
+      var maxlon = parseFloat($parent.find('input[type="text"]:eq(3)').val());
 
       if (isNaN(minlat) || isNaN(minlon) || isNaN(maxlat) || isNaN(maxlon)) {
         return;
