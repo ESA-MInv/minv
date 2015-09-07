@@ -261,11 +261,11 @@ DURATION_REGEX = (
 
 class CollectionConfigurationForm(forms.Form):
     harvest_interval = forms.CharField(required=False,
-        widget=forms.TextInput(attrs=attrs),
+        widget=ClearableTextInput(attrs=attrs),
         validators=[RegexValidator(DURATION_REGEX)]
     )
     export_interval = forms.CharField(required=False,
-        widget=forms.TextInput(attrs=attrs),
+        widget=ClearableTextInput(attrs=attrs),
         validators=[RegexValidator(DURATION_REGEX)]
     )
 
