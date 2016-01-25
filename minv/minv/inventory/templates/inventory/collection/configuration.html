@@ -16,7 +16,7 @@
 
 {% block collection_content %}
 
-<form action="" method="post" class="form-horizontal">
+<form action="{% url 'inventory:collection:configuration' mission=collection.mission file_type=collection.file_type %}" method="post" class="form-horizontal">
   {% csrf_token %}
   {% render_form configuration_form %}
 

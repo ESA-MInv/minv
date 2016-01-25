@@ -22,17 +22,17 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="{% url 'inventory:collection-detail' mission=collection.mission file_type=collection.file_type %}">{{ collection }}</a>
+      <a class="navbar-brand" href="{% url 'inventory:collection:detail' mission=collection.mission file_type=collection.file_type %}">{{ collection }}</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="collection-navbar-collapse">
       <ul class="nav navbar-nav">
-        <li {% if current == "search" %}class="active"{% endif %}><a href="{% url 'inventory:collection-search' mission=collection.mission file_type=collection.file_type %}">Search{% if current == "search" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
-        <li {% if current == "alignment" %}class="active"{% endif %}><a href="{% url 'inventory:collection-alignment' mission=collection.mission file_type=collection.file_type %}">Alignment{% if current == "alignment" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
-        <li {% if current == "export" %}class="active"{% endif %}><a href="{% url 'inventory:collection-export' mission=collection.mission file_type=collection.file_type %}">Export{% if current == "export" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
-        <li {% if current == "import" %}class="active"{% endif %}><a href="{% url 'inventory:collection-import' mission=collection.mission file_type=collection.file_type %}">Import{% if current == "import" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
-        <li {% if current == "configuration" %}class="active"{% endif %}><a href="{% url 'inventory:collection-configuration' mission=collection.mission file_type=collection.file_type %}">Configuration{% if current == "configuration" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
+        <li {% if current == "search" %}class="active"{% endif %}><a href="{% url 'inventory:collection:search' mission=collection.mission file_type=collection.file_type %}">Search{% if current == "search" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
+        <li {% if current == "alignment" %}class="active"{% endif %}><a href="{% url 'inventory:collection:alignment' mission=collection.mission file_type=collection.file_type %}">Alignment{% if current == "alignment" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
+        <li {% if current == "export" %}class="active"{% endif %}><a href="{% url 'inventory:collection:export' mission=collection.mission file_type=collection.file_type %}">Export{% if current == "export" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
+        <li {% if current == "import" %}class="active"{% endif %}><a href="{% url 'inventory:collection:import' mission=collection.mission file_type=collection.file_type %}">Import{% if current == "import" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
+        <li {% if current == "configuration" %}class="active"{% endif %}><a href="{% url 'inventory:collection:configuration' mission=collection.mission file_type=collection.file_type %}">Configuration{% if current == "configuration" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
         <li><a href="{% url 'admin:inventory_collection_change' collection.id %}">Admin</a></li>
       </ul>
     </div>
@@ -48,10 +48,10 @@
 {% block collection_footer %}
 <ol class="breadcrumb">
   <li><a href="{% url 'inventory:root' %}">Home</a></li>
-  <li><a href="{% url 'inventory:collection-list' %}">Collections</a></li>
+  <li><a href="{% url 'inventory:collection:list' %}">Collections</a></li>
   {% if not current %}<li class="active">{{ collection }}</li>
   {% else %}
-  <li><a href="{% url 'inventory:collection-detail' mission=collection.mission file_type=collection.file_type %}">{{ collection }}</a></li>
+  <li><a href="{% url 'inventory:collection:detail' mission=collection.mission file_type=collection.file_type %}">{{ collection }}</a></li>
   <li class="active">{{ current|capfirst }}</li>
   {% endif %}
 </ol>

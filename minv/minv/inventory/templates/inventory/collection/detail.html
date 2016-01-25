@@ -7,7 +7,7 @@
 
 {% block collection_content %}
 
-<form method="get" action="{% url 'inventory:collection-harvest' mission=collection.mission file_type=collection.file_type %}">
+<form method="get" action="{% url 'inventory:collection:harvest' mission=collection.mission file_type=collection.file_type %}">
   <div class="panel panel-default">
     <div class="panel-heading">Locations</div>
     <table class="table table-striped table-condensed">

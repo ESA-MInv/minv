@@ -34,10 +34,10 @@
         <li class="dropdown{% if current == 'collections' %} active{% endif %}">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Collections <span class="caret"></span></a>
           <ul class="dropdown-menu">
-            <li><a href="{% url 'inventory:collection-list' %}">All</a></li>
+            <li><a href="{% url 'inventory:collection:list' %}">All</a></li>
             <li role="separator" class="divider"></li>
             {% for collection in collections %}
-            <li><a href="{% url 'inventory:collection-detail' mission=collection.mission file_type=collection.file_type %}">{{ collection.mission }}/{{ collection.file_type }}</a></li>
+            <li><a href="{% url 'inventory:collection:detail' mission=collection.mission file_type=collection.file_type %}">{{ collection.mission }}/{{ collection.file_type }}</a></li>
             {% endfor %}
           </ul>
         </li>

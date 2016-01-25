@@ -4,6 +4,17 @@
 {% block head %}
 {{ block.super }}
 {{ search_form.media }}
+<style>
+td a {
+  font-size: 75%;
+}
+.btn-sm {
+  padding: 2px 4px;
+}
+.btn-sm span {
+  font-size: 75%;
+}
+</style>
 {% endblock %}
 
 
@@ -15,6 +26,115 @@
 
 
 {% block collection_content %}
+
+Search Key:
+<ul>
+  <li>Platform Serial Identifier</li>
+  <li>Product ID</li>
+  <li>Begin Acquisition</li>
+  <li>End Acquisition</li>
+</ul>
+
+<table class="table table-hover table-condensed table-bordered table-striped">
+  <tr>
+    <th>Record</th>
+    <th>http://oads-1.eo.esa.int/meta/</th>
+    <th>http://oads-2.eo.esa.int/meta/</th>
+    <th>http://oads-3.eo.esa.int/meta/</th>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083158_19990927T083226_002399_0179_0031_A4E5.ZIP</a></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083158_19990927T083226_002399_0179_0031_E51D.ZIP</a></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083222_19990927T083250_002399_0179_0032_188F.ZIP</a></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083222_19990927T083250_002399_0179_0032_0A1B.ZIP</a></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083245_19990927T083314_002399_0179_0033_1BCD.ZIP</a></td>
+    <td class="danger"></td>
+    <td class="info"></td>
+    <td class="info"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083245_19990927T083314_002399_0179_0033_93D1.ZIP</a></td>
+    <td class="danger"></td>
+    <td class="info"></td>
+    <td class="info"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083309_19990927T083338_002399_0179_0034_10CE.ZIP</a></td>
+    <td class="warning" style="text-align:center">
+      <button type="button" class="btn btn-sm" data-toggle="popover" title="Annotation" data-content="Record metadata values different for demonstration purposes."><span class="badge">1</span></button>
+    </td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083309_19990927T083338_002399_0179_0034_DC08.ZIP</a></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083333_19990927T083402_002399_0179_0035_A361.ZIP</a></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083333_19990927T083353_002399_0179_0035_30A8.ZIP</a></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RKSE_ETM_GTC_1P_19990915T093959_19990915T094027_002225_0191_0016_64A8.ZIP</a></td>
+    <td class="warning"></td>
+    <td class="warning" style="text-align:center">
+      <button type="button" class="btn btn-sm" data-toggle="popover" title="Annotation" data-content="Record metadata values different for demonstration purposes."><span class="badge">2</span></button>
+    </td>
+    <td class="warning"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083245_19990927T083314_002399_0179_0033_1BCD.ZIP</a></td>
+    <td class="info"></td>
+    <td class="info"></td>
+    <td class="danger"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083245_19990927T083314_002399_0179_0033_93D1.ZIP</a></td>
+    <td class="info"></td>
+    <td class="info"></td>
+    <td class="danger"></td>
+  </tr>
+  <tr>
+    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083309_19990927T083338_002399_0179_0034_10CE.ZIP</a></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+    <td class="warning"></td>
+  </tr>
+</table>
+
+
+<button type="button" class="btn btn-default btn-block" style="margin-bottom: 10px">Export to CSV</button>
+<button type="button" class="btn btn-primary btn-block" style="margin-bottom: 10px">Visual Analytics</button>
 
 {% endblock %}
 
