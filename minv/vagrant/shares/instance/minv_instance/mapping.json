@@ -1,0 +1,6 @@
+{
+  "track": "track", 
+  "platform_serial_identifier": "platformSerialIdentifier", 
+  "frame": "frame", 
+  "orbit_number": "orbitNumber"
+}
