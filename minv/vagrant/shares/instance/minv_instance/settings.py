@@ -57,9 +57,9 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.messages.context_processors.messages',
 )
 
-ROOT_URLCONF = 'minv_prototype.urls'
+ROOT_URLCONF = 'minv_instance.urls'
 
-WSGI_APPLICATION = 'minv_prototype.wsgi.application'
+WSGI_APPLICATION = 'minv_instance.wsgi.application'
 
 
 # Database
@@ -68,7 +68,6 @@ WSGI_APPLICATION = 'minv_prototype.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        #'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         'NAME': "minv",
         'USER': 'minv',
         'PASSWORD': 'abcdefghijklmnopq'
@@ -102,3 +101,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = '/var/www/html/static/'
