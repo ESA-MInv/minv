@@ -13,3 +13,5 @@ from django.contrib.auth.models import User
 if authenticate(username='admin', password='admin') is None:
     User.objects.create_user('admin', 'admin@admin.ad', 'admin')
 EOF
+
+python /srv/minv/manage.py collectstatic --noinput
