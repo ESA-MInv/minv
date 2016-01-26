@@ -1,6 +1,7 @@
 from os.path import join
 from ConfigParser import RawConfigParser
 import json
+from functools import wraps
 
 from django.shortcuts import render
 from django.core.paginator import Paginator
@@ -13,6 +14,23 @@ from minv.inventory import models
 from minv.inventory import forms
 
 
+def check_collection(view):
+    """ Decorator to check whether a collection exists or not.
+    """
+    @wraps(view)
+    def wrapped(request, mission, file_type, *args, **kwargs):
+        try:
+            return view(request, mission, file_type, *args, **kwargs)
+        except models.Collection.DoesNotExist:
+            return render(
+                request, "inventory/collection/404.html", {
+                    "collections": models.Collection.objects.all(),
+                    "mission": mission, "file_type": file_type
+                }
+            )
+    return wrapped
+
+
 @login_required(login_url="login")
 def list_view(request):
     return render(
@@ -23,6 +41,7 @@ def list_view(request):
 
 
 @login_required(login_url="login")
+@check_collection
 def detail_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -36,6 +55,7 @@ def detail_view(request, mission, file_type):
 
 
 @login_required(login_url="login")
+@check_collection
 def harvest_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -55,12 +75,13 @@ def harvest_view(request, mission, file_type):
             url, collection
         ))
 
-    return redirect("inventory:collection-detail",
+    return redirect("inventory:collection:detail",
         mission=mission, file_type=file_type
     )
 
 
 @login_required(login_url="login")
+@check_collection
 def search_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -121,6 +142,13 @@ def search_view(request, mission, file_type):
 
 
 @login_required(login_url="login")
+@check_collection
+def record_view(request, mission, file_type, filename):
+    pass
+
+
+@login_required(login_url="login")
+@check_collection
 def alignment_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -141,6 +169,7 @@ def alignment_view(request, mission, file_type):
 
 
 @login_required(login_url="login")
+@check_collection
 def export_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -170,6 +199,7 @@ def export_view(request, mission, file_type):
 
 
 @login_required(login_url="login")
+@check_collection
 def import_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -184,6 +214,7 @@ def import_view(request, mission, file_type):
 
 
 @login_required(login_url="login")
+@check_collection
 def configuration_view(request, mission, file_type):
     """ View function to provide a change form for the collections configuration.
     For the metadata mapping a seperate formset is used.

@@ -9,6 +9,7 @@ from minv.inventory import models as inventory_models
 
 
 attrs = {"class": "form-control input-sm"}
+float_attrs = {"class": "form-control input-sm", "step": "any"}
 date_attrs = {
     "class": "form-control input-sm", "data-provide": "datepicker",
     "data-date-format": "yyyy-mm-dd", "data-date-week-start": "1"
@@ -51,7 +52,7 @@ class RangeField(forms.MultiValueField):
     }
 
     def __init__(self, field_class, widget=forms.TextInput, *args, **kwargs):
-        if not 'initial' in kwargs:
+        if 'initial' not in kwargs:
             kwargs['initial'] = ['', '']
 
         fields = (field_class(), field_class())
@@ -67,7 +68,6 @@ class RangeField(forms.MultiValueField):
             value_low = self.fields[0].clean(data_list[0])
             value_high = self.fields[1].clean(data_list[1])
 
-            print value_low, value_high
             if value_low is not None and value_high is not None:
                 if value_low > value_high:
                     raise ValidationError(
@@ -106,7 +106,7 @@ class BBoxWidget(forms.MultiWidget):
 
 class BBoxField(forms.MultiValueField):
     def __init__(self, field_class, widget=forms.TextInput, *args, **kwargs):
-        if not 'initial' in kwargs:
+        if 'initial' not in kwargs:
             kwargs['initial'] = ['', '', '', '']
 
         fields = (field_class(), field_class(), field_class(), field_class())
@@ -199,7 +199,7 @@ class RecordSearchForm(forms.Form):
         )
         self.fields["area"] = BBoxField(
             forms.FloatField, required=False,
-            widget=forms.TextInput(attrs=attrs)
+            widget=forms.NumberInput(attrs=float_attrs)
         )
         for field in inventory_models.Record._meta.fields:
             if isinstance(field, models.IntegerField):
@@ -209,7 +209,8 @@ class RecordSearchForm(forms.Form):
                 )
             elif isinstance(field, models.FloatField):
                 self.fields[field.name] = RangeField(
-                    forms.FloatField, widget=forms.NumberInput(attrs=attrs),
+                    forms.FloatField,
+                    widget=forms.NumberInput(attrs=float_attrs),
                     required=False
                 )
             elif isinstance(field, models.DateTimeField):
