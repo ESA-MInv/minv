@@ -1,4 +1,4 @@
-from django.db import models
+from django.contrib.gis.db import models
 
 
 SEARCH_FIELD_CHOICES = (
@@ -87,9 +87,11 @@ class IndexFile(models.Model):
 
 class Record(models.Model):
     location = models.ForeignKey("Location")
-    index_file = models.ForeignKey("IndexFile")  # TODO: maybe remove?
+    index_file = models.ForeignKey("IndexFile")
     filename = models.CharField(max_length=256, db_index=True)
     filesize = models.IntegerField()
+
+    # TODO: "row" or "offset" in file
 
     # query fields
     # TODO: region = # TODO
@@ -114,7 +116,9 @@ class Record(models.Model):
     baseline = models.CharField(max_length=256, null=True, blank=True,
                                 db_index=True)
 
-    # TODO: footprintCentre
+    sceneCentre = models.PointField(null=True, blank=True, db_index=True)
+    footprint = models.MultiPolygonField(null=True, blank=True, db_index=True)
+
     processing_centre = models.CharField(max_length=256, null=True, blank=True,
                                          db_index=True)
     processing_data = models.DateTimeField(null=True, blank=True, db_index=True)
@@ -137,6 +141,8 @@ class Record(models.Model):
     product_quality_degradatation_tag = models.CharField(max_length=4096,
                                                          null=True, blank=True,
                                                          db_index=True)
+
+    objects = models.GeoManager()
 
     class Meta:
         unique_together = (("filename", "location"),)
