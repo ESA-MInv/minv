@@ -10,3 +10,5 @@
 # Developers
 .project
 .pydevproject
+
+/vagrant/.vagrant/
