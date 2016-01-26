@@ -6,6 +6,7 @@ from django.db.transaction import atomic
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import utc
 from django.db import models
+from django.conf import settings
 
 from minv.inventory.models import Collection, Location, Record, IndexFile
 from minv.monitor.tasks import monitor
@@ -24,7 +25,6 @@ def ingest(mission, file_type, url, index_file_name):
 
         # parse index file name info
         s, e, u = basename(index_file_name).partition(".")[0].split("_")
-        print s, e, u
         index_file = IndexFile(
             filename=index_file_name, location=location,
             begin_time=parse_index_time(s), end_time=parse_index_time(e),
@@ -45,20 +45,23 @@ def ingest(mission, file_type, url, index_file_name):
             elif isinstance(field, models.CharField) and field.choices:
                 preparations[target] = lambda value: value[0].upper()
 
-        print mapping
+        try:
+            with open(index_file_name) as f:
+                reader = csv.DictReader(f, delimiter="\t")
+                print reader
+                for row in reader:
+                    print row
+                    record = Record(index_file=index_file, location=location)
+                    for source, target in mapping:
+                        value = row[source]
+                        preparator = preparations.get(target)
+                        if preparator:
+                            value = preparator(value)
+                        setattr(record, target, value)
 
-        with open(index_file_name) as f:
-            reader = csv.DictReader(f, delimiter="\t")
-            print reader
-            for row in reader:
-                print row
-                record = Record(index_file=index_file, location=location)
-                for source, target in mapping:
-                    value = row[source]
-                    preparator = preparations.get(target)
-                    if preparator:
-                        value = preparator(value)
-                    setattr(record, target, value)
-
-                record.full_clean()
-                record.save()
+                    record.full_clean()
+                    record.save()
+        except:
+            pass
+        else:
+            pass
