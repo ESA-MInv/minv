@@ -84,7 +84,7 @@ $(function() {
             style: "default",
             attributions: [
               new ol.Attribution({
-                html: "Data &copy; <a href=\"http://www.openstreetmap.org/copyright\" target=\"_blank\">OpenStreetMap</a> contributors and <a href=\"/map_attribution.html\">others</a>. Rendering &copy; <a href=\"http://maps.eox.at\" target=\"_blank\">EOX</a>."
+                html: 'Data &copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors and <a href="/map_attribution.html">others</a>. Rendering &copy; <a href="http://maps.eox.at" target="_blank">EOX</a>.'
               })
             ],
           })
@@ -111,7 +111,7 @@ $(function() {
             style: "default",
             attributions: [
               new ol.Attribution({
-                html: 'Data &copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors and <a href=\"/map_attribution.html\">others</a>. Rendering &copy; <a href="http://maps.eox.at" target="_blank">EOX</a>.'
+                html: 'Data &copy; <a href="http://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors and <a href="/map_attribution.html">others</a>. Rendering &copy; <a href="http://maps.eox.at" target="_blank">EOX</a>.'
               })
             ],
           })
@@ -194,4 +194,7 @@ $(function() {
 
     return map;
   }
+
+  // activate Bootstrap popover
+  $('[data-toggle="popover"]').popover()
 });
