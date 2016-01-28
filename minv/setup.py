@@ -8,7 +8,6 @@ def find_files(base_path):
         for filename in filenames:
             yield os.path.join(dirpath, filename)
 
-
 setup(
     name='minv',
     version="0.0.1",
@@ -26,4 +25,15 @@ setup(
             "*.woff", "*.woff2", "*.ttf"
         ]
     },
+    data_files=[
+        ("/etc/httpd/conf.d", ["minv/package/httpd/minv.conf"]),
+        ("/etc/minv", ["minv/package/minv.conf"]),
+        ("/etc/logrotate.d/", ["minv/package/logrotate/minv"]),
+        ("/etc/sudoers.d/", ["minv/package/sudoers.d/minv"]),
+        (
+            "/etc/profile.d/",
+            ["minv/package/profile.d/minv.sh", "minv/package/profile.d/minv.csh"]
+        ),
+        ("/etc/init.d", ["minv/package/scripts/minvd"])
+    ]
 )
