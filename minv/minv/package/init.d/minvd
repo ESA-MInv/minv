@@ -1,0 +1,143 @@
+#!/bin/bash
+#
+# Copyright (C) 2016 EOX IT Services GmbH
+# Authors:  Fabian Schindler <fabian.schindler@eox.at>
+#
+# minvd     Master Inventory daemon
+#
+# chkconfig: - 96 05
+# description: The Master Inventory multi purpose daemon to manage, schedule \
+#              execute various tasks.
+#
+# processname: minvd
+# config: /etc/minv/minv.conf
+# pidfile: /var/run/minv.harvest.pid
+# pidfile: /var/lock/subsys/minv
+#
+### BEGIN INIT INFO
+# Provides: minvd
+# Required-Start: $local_fs $remote_fs $network $named
+# Required-Stop: $local_fs $remote_fs $network
+# Default-Start:
+# Default-Stop: 0 1 2 3 4 5 6
+# Short-Description: start and stop Sx-Cat catalogue harvesting daemon
+# Description: The Sx-Cat catalogue harvesting daemon schedules metadata
+#  updates for the configured data collections.
+### END INIT INFO
+
+# Source function library.
+. /etc/init.d/functions
+
+# NOTE: The lock-file is required by SysV spec and *shall* be
+#       present. The SysV implemetation may relay on its existence.
+#       See: http://fedoraproject.org/wiki/Packaging:SysVInitScript#Why_do_SysV_initscripts_with_resident_daemons_require_lock_files.3F
+SERVICE="minvd"
+PIDFILE="/var/run/${SERVICE}.pid"
+LOCKFILE="/var/lock/subsys/$SERVICE"
+CONFIG="/etc/minv/minv.conf"
+#CONSOLE_LOG="/dev/null"
+CONSOLE_LOG="/var/log/minv/${SERVICE}_console.log"
+SYSCONF="/etc/sysconfig/$SERVICE"
+USER="minv"
+
+# source the system configuration
+[ -e "$SYSCONF" ] && . "$SYSCONF"
+
+COMMAND="runuser -s /bin/bash $USER -c 'ulimit -S -c 0 &>/dev/null ; nohup python -m minv.harvest.daemon 0<&- &>$CONSOLE_LOG & echo \$!' > $PIDFILE"
+
+_remove_unused_socket_file() {
+    # remove the unused socket file
+    SOCKET_FILE="`sed -ne 's/^socket_file\s*=\s*\(.*\)\s*$/\1/p' "$CONFIG"`"
+    if [ -S "$SOCKET_FILE" ]
+    then
+        echo $"WARNING: Socket file '$SOCKET_FILE' exists!"
+        if [ -z "`fuser "$SOCKET_FILE" 2>/dev/null`" ]
+        then
+            echo $"WARNING: Removing the unused socket file."
+            unlink "$SOCKET_FILE"
+        fi
+    fi
+}
+_status() {
+    status -p "$PIDFILE" "$SERVICE"
+}
+
+start() {
+    # check status and write message if something is wrong
+    MSG="$( _status )"
+    case "$?" in
+        0 ) # running
+            echo $"$MSG "
+            touch "$LOCKFILE"
+            return 0
+            ;;
+        1 | 2 ) # stopped with issues
+            echo $"WARNING: $MSG"
+            ;;
+        3 ) # stopped
+            ;;
+        * ) # unexpected status
+            echo $"ERROR: $MSG"
+            return 1
+            ;;
+    esac
+    # regular start-up
+    _remove_unused_socket_file
+    echo -n $"starting $SERVICE: "
+    daemon --pidfile="$PIDFILE" "$COMMAND"
+    RETVAL="$?"
+    echo
+    [ "$RETVAL" -eq 0 ] && touch "$LOCKFILE"
+    return "$RETVAL"
+}
+
+stop() {
+    # check status and write message if something is wrong
+    MSG="$( _status )"
+    case "$?" in
+        0 ) # running
+            ;;
+        1 | 2 ) # stopped with issues
+            echo $"WARNING: $MSG "
+            [ -f "$LOCKFILE" ] && rm -f "$LOCKFILE"
+            [ -f "$PIDFILE" ] && rm -f "$PIDFILE"
+            return 0
+            ;;
+        3 ) # stopped
+            echo $"$MSG "
+            return 0
+            ;;
+        * ) # unexpected status
+            echo $"ERROR: $MSG"
+            return 1
+            ;;
+    esac
+    # regular shut-down
+    echo -n $"stopping $SERVICE: "
+    killproc -p "$PIDFILE" "$SERVICE"
+    RETVAL="$?"
+    echo
+    [ "$RETVAL" -eq 0 ] && rm -f "$LOCKFILE"
+    return "$RETVAL"
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        _status
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo $"Usage:  {start|stop|status|restart}"
+        exit 2
+        ;;
+esac
+exit "$?"
