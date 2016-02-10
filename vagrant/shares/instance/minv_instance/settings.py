@@ -46,7 +46,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-#    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
@@ -102,3 +101,28 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = '/var/www/html/static/'
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/minv/minv.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'minv': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
