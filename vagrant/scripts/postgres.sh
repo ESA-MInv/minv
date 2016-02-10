@@ -1,1 +1,1 @@
-source /var/minv/minv/scripts/minv_install_postgresql.sh
+source /var/minv/minv/package/minv_install_postgresql.sh
