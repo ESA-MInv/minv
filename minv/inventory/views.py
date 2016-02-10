@@ -15,20 +15,25 @@ from minv.monitor import models as monitor_models
 def login_view(request):
     logout(request)
     username = password = ''
+    login_error = None
     if request.POST:
         username = request.POST['username']
         password = request.POST['password']
         next_ = request.POST.get('next')
 
         user = authenticate(username=username, password=password)
-        if user is not None:
-            if user.is_active:
-                login(request, user)
-                if next_:
-                    return redirect(next_)
-                return redirect('inventory:root')
+        if user is not None and user.is_active:
+            login(request, user)
+            if next_:
+                return redirect(next_)
+            return redirect('inventory:root')
+        else:
+            login_error = True
     return render(
-        request, 'inventory/login.html', {"next": request.GET.get("next")}
+        request, 'inventory/login.html', {
+            "next": request.GET.get("next"),
+            "login_error": login_error
+        }
     )
 
 
