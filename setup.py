@@ -26,14 +26,14 @@ setup(
         ]
     },
     data_files=[
-        ("/etc/httpd/conf.d", ["minv/package/httpd/minv.conf"]),
+        ("/etc/httpd/conf.d", ["minv/package/httpd_conf.d/minv.conf"]),
         ("/etc/minv", ["minv/package/minv.conf"]),
-        ("/etc/logrotate.d/", ["minv/package/logrotate/minv"]),
+        ("/etc/logrotate.d/", ["minv/package/logrotate.d/minv"]),
         ("/etc/sudoers.d/", ["minv/package/sudoers.d/minv"]),
         (
             "/etc/profile.d/",
             ["minv/package/profile.d/minv.sh", "minv/package/profile.d/minv.csh"]
         ),
-        ("/etc/init.d", ["minv/package/scripts/minvd"])
+        ("/etc/init.d", ["minv/package/init.d/minvd"])
     ]
 )
