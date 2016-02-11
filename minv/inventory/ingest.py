@@ -2,7 +2,7 @@ import csv
 from os.path import basename
 from datetime import datetime
 
-from django.db.transaction import atomic
+from django.db import transaction
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import utc
 from django.db import models
@@ -16,7 +16,7 @@ def parse_index_time(value):
     return datetime.strptime(value, "%Y%m%d-%H%M%S").replace(tzinfo=utc)
 
 
-@atomic
+@transaction.atomic
 def ingest(mission, file_type, url, index_file_name):
     # start monitored ingest of file
     with monitor("ingest", mission=mission, file_type=file_type, url=url):
@@ -61,7 +61,13 @@ def ingest(mission, file_type, url, index_file_name):
 
                     record.full_clean()
                     record.save()
-        except:
-            pass
+        except Exception as exc:
+            raise IngestionError(
+                "Ingestion of index file '%s' failed. Error was '%s'." % exc
+            )
         else:
             pass
+
+
+class IngestionError(Exception):
+    pass
