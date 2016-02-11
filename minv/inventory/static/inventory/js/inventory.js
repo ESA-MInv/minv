@@ -160,19 +160,19 @@ $(function() {
       vectorSource.addFeature(feature);
       var extent = geom.getExtent();
       
-      $parent.find('input[type="text"]:eq(0)').val(extent[1]);
-      $parent.find('input[type="text"]:eq(1)').val(extent[0]);
-      $parent.find('input[type="text"]:eq(2)').val(extent[3]);
-      $parent.find('input[type="text"]:eq(3)').val(extent[2]);
+      $parent.find('#id_area_0').val(extent[1]);
+      $parent.find('#id_area_1').val(extent[0]);
+      $parent.find('#id_area_2').val(extent[3]);
+      $parent.find('#id_area_3').val(extent[2]);
     });
     
     // listen on changes in the adjacent inputs
     $parent.find('input[type="text"]').change(function() {
       vectorSource.clear();
-      var minlat = parseFloat($parent.find('input[type="text"]:eq(0)').val());
-      var minlon = parseFloat($parent.find('input[type="text"]:eq(1)').val());
-      var maxlat = parseFloat($parent.find('input[type="text"]:eq(2)').val());
-      var maxlon = parseFloat($parent.find('input[type="text"]:eq(3)').val());
+      var minlat = parseFloat($parent.find('#id_area_0').val());
+      var minlon = parseFloat($parent.find('#id_area_1').val());
+      var maxlat = parseFloat($parent.find('#id_area_2').val());
+      var maxlon = parseFloat($parent.find('#id_area_3').val());
 
       if (isNaN(minlat) || isNaN(minlon) || isNaN(maxlat) || isNaN(maxlon)) {
         return;
