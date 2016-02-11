@@ -1,4 +1,10 @@
+from os import makedirs, rmdir
+from os.path import join
+
 from django.contrib.gis.db import models
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from django.conf import settings
 
 
 SEARCH_FIELD_CHOICES = (
@@ -11,6 +17,7 @@ SEARCH_FIELD_CHOICES = (
     ("mission_phase", "Mission Phase"),
     ("operational_mode", "Operational Mode"),
     ("swath", "Swath"),
+    ("instrument", "Instrument"),
     ("product_id", "Product ID"),
     ("begin_time", "Begin Acquisistion"),
     ("end_time", "End Acquisition"),
@@ -105,6 +112,8 @@ class Record(models.Model):
     operational_mode = models.CharField(max_length=64, null=True, blank=True,
                                         db_index=True)
     swath = models.IntegerField(null=True, blank=True, db_index=True)
+    instrument = models.CharField(max_length=256, null=True, blank=True,
+                                  db_index=True)
     product_id = models.CharField(max_length=1024, null=True, blank=True,
                                   db_index=True)
 
@@ -155,3 +164,24 @@ class Annotation(models.Model):
     record = models.ForeignKey("Record")
     text = models.TextField()
     insertion_time = models.DateTimeField(auto_now_add=True)
+
+
+# setup and teardown stuff
+
+
+@receiver(post_save)
+def on_collection_created(sender, instance, created, **kwargs):
+    if sender is Collection and created:
+        makedirs(join(
+            settings.BASE_PATH, "collections", instance.mission,
+            instance.file_type
+        ))
+
+
+@receiver(post_delete)
+def on_collection_deleted(sender, instance, **kwargs):
+    if sender is Collection:
+        rmdir(join(
+            settings.BASE_PATH, "collections", instance.mission,
+            instance.file_type
+        ))
