@@ -1,20 +1,11 @@
 {% extends "inventory/collection/base.html" %}
+{% load staticfiles %}
 {% load inventory_extras %}
 
 {% block head %}
+<script src="{% static 'inventory/js/ol.js' %}"></script>
+<link rel="stylesheet" href="{% static 'inventory/css/ol.css' %}">
 {{ block.super }}
-{{ search_form.media }}
-<style>
-td a {
-  font-size: 75%;
-}
-.btn-sm {
-  padding: 2px 4px;
-}
-.btn-sm span {
-  font-size: 75%;
-}
-</style>
 {% endblock %}
 
 
@@ -24,119 +15,75 @@ td a {
 {% endwith %}
 {% endblock %}
 
-
 {% block collection_content %}
 
-Search Key:
-<ul>
-  <li>Platform Serial Identifier</li>
-  <li>Product ID</li>
-  <li>Begin Acquisition</li>
-  <li>End Acquisition</li>
+<ul class="nav nav-tabs" role="tablist">
+  <li role="presentation" class="{% if results == None %}active{% endif %}">
+    <a href="#parameters" aria-controls="home" role="tab" data-toggle="tab">Parameters</a>
+  </li>
+  <li role="presentation" class="{% if results == None %}disabled{% else %}active{% endif %}">
+    <a href="#results" aria-controls="profile" role="tab" {% if not results == None %}data-toggle="tab"{% endif %}>Results</a>
+  </li>
 </ul>
 
-<table class="table table-hover table-condensed table-bordered table-striped">
-  <tr>
-    <th>Record</th>
-    <th>http://oads-1.eo.esa.int/meta/</th>
-    <th>http://oads-2.eo.esa.int/meta/</th>
-    <th>http://oads-3.eo.esa.int/meta/</th>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083158_19990927T083226_002399_0179_0031_A4E5.ZIP</a></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083158_19990927T083226_002399_0179_0031_E51D.ZIP</a></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083222_19990927T083250_002399_0179_0032_188F.ZIP</a></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083222_19990927T083250_002399_0179_0032_0A1B.ZIP</a></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083245_19990927T083314_002399_0179_0033_1BCD.ZIP</a></td>
-    <td class="danger"></td>
-    <td class="info"></td>
-    <td class="info"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083245_19990927T083314_002399_0179_0033_93D1.ZIP</a></td>
-    <td class="danger"></td>
-    <td class="info"></td>
-    <td class="info"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083309_19990927T083338_002399_0179_0034_10CE.ZIP</a></td>
-    <td class="warning" style="text-align:center">
-      <button type="button" class="btn btn-sm" data-toggle="popover" title="Annotation" data-content="Record metadata values different for demonstration purposes."><span class="badge">1</span></button>
-    </td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083309_19990927T083338_002399_0179_0034_DC08.ZIP</a></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083333_19990927T083402_002399_0179_0035_A361.ZIP</a></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083333_19990927T083353_002399_0179_0035_30A8.ZIP</a></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RKSE_ETM_GTC_1P_19990915T093959_19990915T094027_002225_0191_0016_64A8.ZIP</a></td>
-    <td class="warning"></td>
-    <td class="warning" style="text-align:center">
-      <button type="button" class="btn btn-sm" data-toggle="popover" title="Annotation" data-content="Record metadata values different for demonstration purposes."><span class="badge">2</span></button>
-    </td>
-    <td class="warning"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083245_19990927T083314_002399_0179_0033_1BCD.ZIP</a></td>
-    <td class="info"></td>
-    <td class="info"></td>
-    <td class="danger"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RNSG_ETM_GTC_1P_19990927T083245_19990927T083314_002399_0179_0033_93D1.ZIP</a></td>
-    <td class="info"></td>
-    <td class="info"></td>
-    <td class="danger"></td>
-  </tr>
-  <tr>
-    <td><a href="">LS07_RFUI_ETM_GTC_1P_19990927T083309_19990927T083338_002399_0179_0034_10CE.ZIP</a></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-    <td class="warning"></td>
-  </tr>
-</table>
+<form action="{% url 'inventory:collection:alignment' mission=collection.mission file_type=collection.file_type %}" method="post" class="form-horizontal">
+  {% csrf_token %}
 
-
-<button type="button" class="btn btn-default btn-block" style="margin-bottom: 10px">Export to CSV</button>
-<button type="button" class="btn btn-primary btn-block" style="margin-bottom: 10px">Visual Analytics</button>
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane {% if results == None %}active{% endif %}" id="parameters">
+      <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+          <button type="submit" class="btn btn-default">Perform Alignment Check</button>
+        </div>
+      </div>
+      {% render_form pagination_form %}
+      {% render_form alignment_form %}
+      <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+          <button type="submit" class="btn btn-default">Perform Alignment Check</button>
+        </div>
+      </div>
+    </div>
+    <div role="tabpanel" class="tab-pane {% if not results == None %}active{% endif %}" id="results">
+      {% if not results %}
+        No missalignments were detected.
+      {% else %}
+        <p>Search hit {{ results.paginator.count }} results, showing {{ results|length }}.</p>
+        {% for record in results %}
+          {{ record }}
+        {% endfor %}
+        <nav>
+          <ul class="pagination">
+            {% if results.number > 2 %}
+              <li>
+                <a href="#" data-page="1" aria-label="Previous">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+            {% endif %}
+            {% if results.has_previous %}
+              <li><a href="#" data-page="{{ results.previous_page_number }}">{{ results.previous_page_number }}</a></li>
+            {% endif %}
+            <li class="active"><a href="#">{{ results.number }}<span class="sr-only">(current)</span></a></li>
+            {% if results.has_next %}
+              <li><a href="#" data-page="{{ results.next_page_number }}">{{ results.next_page_number }}</a></li>
+            {% endif %}
+            {% if results.has_next and results.next_page_number < results.paginator.num_pages %}
+            <li>
+              <a href="#" data-page="{{ results.paginator.num_pages }}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
+    </div>
+  </div>
+</form>
 
 {% endblock %}
+
 
 {% block collection_footer %}
 {% with "alignment" as current %}

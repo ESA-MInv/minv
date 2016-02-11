@@ -234,6 +234,79 @@ class RecordSearchForm(forms.Form):
                     )
 
 
+class AlignmentForm(forms.Form):
+    def __init__(self, locations, *args, **kwargs):
+        """ Dynamically create form fields for eligible model fields.
+        """
+        super(AlignmentForm, self).__init__(*args, **kwargs)
+        self.fields["locations"] = forms.MultipleChoiceField(
+            required=False,
+            choices=[(location.id, str(location)) for location in locations],
+            widget=forms.CheckboxSelectMultiple
+        )
+        self.fields["instrument"] = forms.CharField(
+            required=False, widget=ClearableTextInput(attrs=attrs)
+        )
+        self.fields["satellite_identifier"] = forms.CharField(
+            required=False, widget=ClearableTextInput(attrs=attrs)
+        )
+        self.fields["file_class"] = forms.CharField(
+            required=False, widget=ClearableTextInput(attrs=attrs)
+        )
+        self.fields["time_span"] = RangeField(forms.DateTimeField,
+            required=False, widget=forms.TextInput(attrs=date_attrs)
+        )
+        self.fields["orbit"] = RangeField(
+            forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
+            required=False
+        )
+        self.fields["track"] = RangeField(
+            forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
+            required=False
+        )
+        self.fields["frame"] = RangeField(
+            forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
+            required=False
+        )
+        self.fields["creation_date"] = RangeField(forms.DateTimeField,
+            required=False, widget=forms.TextInput(attrs=date_attrs)
+        )
+        self.fields["baseline"] = forms.CharField(
+            required=False, widget=ClearableTextInput(attrs=attrs)
+        )
+    #     for field in inventory_models.Record._meta.fields:
+    #         if isinstance(field, models.IntegerField):
+    #             self.fields[field.name] = RangeField(
+    #                 forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
+    #                 required=False
+    #             )
+    #         elif isinstance(field, models.FloatField):
+    #             self.fields[field.name] = RangeField(
+    #                 forms.FloatField,
+    #                 widget=forms.NumberInput(attrs=float_attrs),
+    #                 required=False
+    #             )
+    #         elif isinstance(field, models.DateTimeField):
+    #             name = field.name
+    #             if name == "begin_time":
+    #                 continue
+    #             elif name == "end_time":
+    #                 name = "acquisition_date"
+    #             self.fields[name] = RangeField(forms.DateTimeField,
+    #                 required=False, widget=forms.TextInput(attrs=date_attrs)
+    #             )
+    #         elif isinstance(field, models.CharField):
+    #             if field.choices:
+    #                 self.fields[field.name] = forms.ChoiceField(
+    #                     required=False, choices=(("", "---"),) + field.choices,
+    #                     widget=forms.Select(attrs=attrs)
+    #                 )
+    #             else:
+    #                 self.fields[field.name] = forms.CharField(
+    #                     required=False, widget=ClearableTextInput(attrs=attrs)
+    #                 )
+
+
 class ImportExportBaseForm(forms.Form):
     selection = forms.ChoiceField(required=False,
         choices=(("full", "Full: Configuration and Data"),
