@@ -1,6 +1,6 @@
 include README
 include MANIFEST.in
 graft minv
+graft minv/package
 recursive-include minv *.py *.html *.js *.css *.eot *.svg *.woff *.woff2 *.ttf *.conf
 recursive-exclude minv *.pyc .DS_Store
-recursive-exclude minv_prototype *
