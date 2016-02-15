@@ -17,6 +17,7 @@ setup(
     url='',
     packages=find_packages(),
     scripts=[
+        "minv/package/scripts/minv"
     ],
     include_package_data=True,
     package_data={
