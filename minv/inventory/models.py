@@ -97,6 +97,7 @@ class Record(models.Model):
     index_file = models.ForeignKey("IndexFile")
     filename = models.CharField(max_length=256, db_index=True)
     filesize = models.IntegerField()
+    checksum = models.CharField(max_length=256)
 
     # TODO: "row" or "offset" in file
 
@@ -125,7 +126,7 @@ class Record(models.Model):
     baseline = models.CharField(max_length=256, null=True, blank=True,
                                 db_index=True)
 
-    sceneCentre = models.PointField(null=True, blank=True, db_index=True)
+    scene_centre = models.PointField(null=True, blank=True, db_index=True)
     footprint = models.MultiPolygonField(null=True, blank=True, db_index=True)
 
     processing_centre = models.CharField(max_length=256, null=True, blank=True,
