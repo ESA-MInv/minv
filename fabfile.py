@@ -5,13 +5,14 @@ from fabric.api import local, put, sudo, lcd, env
 import minv
 
 
-def deploy(uninstall=False, version=None):
+def deploy(uninstall=False, restart=True, version=None):
     version = version or minv.__version__
     put(join(env.builder_path, "build/RPMS/minv-%s-1.noarch.rpm" % version), "")
     if uninstall:
         sudo("yum remove -y minv")
     sudo("yum install -y minv-%s-1.noarch.rpm" % version)
-    sudo("service httpd restart")
+    if restart:
+        sudo("service httpd restart")
 
 
 def archive(version=None):
@@ -20,8 +21,8 @@ def archive(version=None):
         local(
             "git archive --format=tar --prefix=MInv-{version}/ master "
             "| gzip > MInv-{version}.tar.gz"
-            "; mv MInv-{version}.tar.gz ../../builder/build/SOURCES/".format(
-                version=version
+            "; mv MInv-{version}.tar.gz {builder_path}/build/SOURCES/".format(
+                version=version, builder_path=env.builder_path
             )
         )
 
