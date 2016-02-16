@@ -1,6 +1,7 @@
-
 import os.path
 from setuptools import setup, find_packages
+
+import minv
 
 
 def find_files(base_path):
@@ -10,7 +11,7 @@ def find_files(base_path):
 
 setup(
     name='minv',
-    version="0.0.1",
+    version=minv.__version__,
     description='MInv - Master Inventory',
     author='Fabian Schindler',
     author_email='fabian.schindler@eox.at',
