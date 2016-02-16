@@ -21,4 +21,3 @@ chown minv:minv -R $DATA_DIR/minv_instance
 chmod 0755 $DATA_DIR/minv_instance/
 
 python $DATA_DIR/manage.py collectstatic
-python $DATA_DIR/manage.py syncdb
