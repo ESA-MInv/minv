@@ -11,6 +11,9 @@
 .project
 .pydevproject
 
+# Fabric rc file
+fabrc.conf
+
 /vagrant/.vagrant/
 /vagrant/shares/httpd_conf.d/README
 /vagrant/shares/httpd_conf.d/welcome.conf
