@@ -20,4 +20,4 @@ django-admin.py startproject minv_instance $DATA_DIR --template $INSTALL_DIR/ins
 chown minv:minv -R $DATA_DIR/minv_instance
 chmod 0755 $DATA_DIR/minv_instance/
 
-python $DATA_DIR/manage.py collectstatic
+python $DATA_DIR/manage.py collectstatic --noinput
