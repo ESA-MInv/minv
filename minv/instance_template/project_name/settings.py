@@ -10,6 +10,10 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+
+from minv.config import DatabaseReader
+
+
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
@@ -63,12 +67,15 @@ WSGI_APPLICATION = '{{ project_name }}.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
+reader = DatabaseReader(open("/etc/minv/minv.conf"))
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': "minv",
-        'USER': 'minv',
-        'PASSWORD': 'abcdefghijklmnopq'
+        'HOST': reader.host,
+        'PORT': reader.port,
+        'NAME': reader.database,
+        'USER': reader.user,
+        'PASSWORD': reader.password
     }
 }
 

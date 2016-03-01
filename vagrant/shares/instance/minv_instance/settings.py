@@ -10,6 +10,10 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+
+from minv.config import DatabaseReader
+
+
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
@@ -24,7 +28,7 @@ DEBUG = True
 
 TEMPLATE_DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -64,12 +68,15 @@ WSGI_APPLICATION = 'minv_instance.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
+reader = DatabaseReader(open("/etc/minv/minv.conf"))
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': "minv",
-        'USER': 'minv',
-        'PASSWORD': 'abcdefghijklmnopq'
+        'HOST': reader.host,
+        'PORT': reader.port,
+        'NAME': reader.database,
+        'USER': reader.user,
+        'PASSWORD': reader.password
     }
 }
 
@@ -99,8 +106,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = '/var/www/html/static/'
+STATIC_URL = '/minv_static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 
 LOGGING = {
@@ -108,7 +115,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {
         'file': {
-            'level': 'DEBUG',
+            'level': 'DEBUG' if DEBUG else 'INFO',
             'class': 'logging.FileHandler',
             'filename': '/var/log/minv/minv.log',
         },
@@ -116,12 +123,12 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['file'],
-            'level': 'DEBUG',
+            'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': True,
         },
         'minv': {
             'handlers': ['file'],
-            'level': 'DEBUG',
+            'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': True,
         },
     },
