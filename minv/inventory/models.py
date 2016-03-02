@@ -174,7 +174,7 @@ class Annotation(models.Model):
 def on_collection_created(sender, instance, created, **kwargs):
     if sender is Collection and created:
         makedirs(join(
-            settings.BASE_PATH, "collections", instance.mission,
+            settings.BASE_DIR, "collections", instance.mission,
             instance.file_type
         ))
 
@@ -183,6 +183,6 @@ def on_collection_created(sender, instance, created, **kwargs):
 def on_collection_deleted(sender, instance, **kwargs):
     if sender is Collection:
         rmdir(join(
-            settings.BASE_PATH, "collections", instance.mission,
+            settings.BASE_DIR, "collections", instance.mission,
             instance.file_type
         ))
