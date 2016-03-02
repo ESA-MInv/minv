@@ -15,6 +15,7 @@ if authenticate(username='admin', password='admin') is None:
     user.is_superuser = True
     user.is_staff = True
     user.save()
+
 EOF
 
 python /srv/minv/manage.py collectstatic --noinput
