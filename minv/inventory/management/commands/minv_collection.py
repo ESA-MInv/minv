@@ -51,8 +51,8 @@ class Command(BaseCommand):
                 raise CommandError("Missing mandatory parameter 'file-type'.")
 
         if mode == "create":
-            oads_list = options["oads_list"]
-            nga_list = options["nga_list"]
+            oads_list = options["oads_list"] or []
+            nga_list = options["nga_list"] or []
 
             try:
                 collection = models.Collection.objects.create(
