@@ -29,7 +29,7 @@ class Command(BaseCommand):
     )
 
     args = (
-        '-m MISSION -f FILE TYPE [-c | -d] '
+        '-m MISSION -f FILE TYPE [-c | -d | -l] '
         '[-o <oads-url> [-o <oads-url> ... ]] '
         '[-n <nga-url> [-n <nga-url> ... ]] '
     )
