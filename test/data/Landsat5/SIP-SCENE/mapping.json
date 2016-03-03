@@ -1,0 +1,16 @@
+{
+    "filename": "file",
+    "filesize": "productSize",
+    "checksum": "productSize",
+    "orbit_number": "orbitNumber",
+    "track": "wrsLatitudeGrid",
+    "frame": "wrsLongitudeGrid",
+    "platform_serial_identifier": "platformSerialIdentifier",
+    "instrument": "instrumentShortName",
+    "product_id": "productId",
+    "begin_time": "beginAcquisition",
+    "end_time": "endAcquisition",
+    "processing_mode": "processingMode",
+    "orbit_direction": "orbitDirection",
+    "product_quality_degradatation": "productQualityDegradation"
+}

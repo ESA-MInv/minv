@@ -1,5 +1,6 @@
 from os import makedirs, rmdir
 from os.path import join
+import json
 
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save, post_delete
@@ -44,10 +45,20 @@ class Collection(models.Model):
         return "%s/%s" % (self.mission, self.file_type)
 
     def get_metadata_field_mapping(self):
-        return dict(
-            (mapping.indexfile_key, mapping.search_key)
-            for mapping in self.metadata_field_mappings.all()
-        )
+        with open(join(self.config_dir, "mapping.json")) as f:
+            return json.load(f)
+        # return dict(
+        #     (mapping.indexfile_key, mapping.search_key)
+        #     for mapping in self.metadata_field_mappings.all()
+        # )
+
+    @property
+    def config_dir(self):
+        return join("/etc/minv/collections", self.mission, self.file_type)
+
+    @property
+    def data_dir(self):
+        return join("/srv/minv/collections", self.mission, self.file_type)
 
     class Meta:
         unique_together = (("mission", "file_type"),)
@@ -173,20 +184,17 @@ class Annotation(models.Model):
 @receiver(post_save)
 def on_collection_created(sender, instance, created, **kwargs):
     if sender is Collection and created:
-        makedirs(join(
-            settings.BASE_DIR, "collections", instance.mission,
-            instance.file_type
-        ))
+        makedirs(instance.config_dir)
+        with open(join(instance.config_dir, "mapping.json"), "w") as f:
+            json.dump({}, f)
+        makedirs(instance.data_dir)
 
 
 @receiver(post_delete)
 def on_collection_deleted(sender, instance, **kwargs):
     if sender is Collection:
-        rmdir(join(
-            settings.BASE_DIR, "collections", instance.mission,
-            instance.file_type
-        ))
+        rmdir(instance.data_dir)
         # if that was the only collection with that exact mission, remove the
         # mission dir aswell
         if not Collection.objects.filter(mission=instance.mission).exists():
-            rmdir(join(settings.BASE_DIR, "collections", instance.mission))
+            rmdir(join("/srv/minv/collections", instance.mission))

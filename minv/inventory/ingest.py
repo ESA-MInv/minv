@@ -6,7 +6,6 @@ from django.db import transaction
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import utc
 from django.db import models
-from django.conf import settings
 
 from minv.inventory.models import Collection, Location, Record, IndexFile
 from minv.monitor.tasks import monitor
@@ -38,35 +37,33 @@ def ingest(mission, file_type, url, index_file_name):
         preparations = {}
 
         mapping = collection.get_metadata_field_mapping().items()
-        for _, target in mapping:
+        for target, _ in mapping:
             field = meta.get_field(target)
             if isinstance(field, models.DateTimeField):
                 preparations[target] = parse_datetime  # TODO: necessary?
             elif isinstance(field, models.CharField) and field.choices:
                 preparations[target] = lambda value: value[0].upper()
 
-        try:
-            with open(index_file_name) as f:
-                reader = csv.DictReader(f, delimiter="\t")
-                print reader
-                for row in reader:
-                    print row
-                    record = Record(index_file=index_file, location=location)
-                    for source, target in mapping:
+        with open(index_file_name) as f:
+            reader = csv.DictReader(f, delimiter="\t")
+            for row in reader:
+                record = Record(index_file=index_file, location=location)
+                for target, source in mapping:
+                    try:
                         value = row[source]
-                        preparator = preparations.get(target)
-                        if preparator:
-                            value = preparator(value)
-                        setattr(record, target, value)
+                    except KeyError:
+                        raise IngestionError(
+                            "Index file '%s' has no such field '%s'."
+                            % (index_file_name, source)
+                        )
+                    preparator = preparations.get(target)
+                    if preparator:
+                        value = preparator(value)
 
-                    record.full_clean()
-                    record.save()
-        except Exception as exc:
-            raise IngestionError(
-                "Ingestion of index file '%s' failed. Error was '%s'." % exc
-            )
-        else:
-            pass
+                    setattr(record, target, value)
+
+                record.full_clean()
+                record.save()
 
 
 class IngestionError(Exception):
