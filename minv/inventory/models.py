@@ -186,3 +186,7 @@ def on_collection_deleted(sender, instance, **kwargs):
             settings.BASE_DIR, "collections", instance.mission,
             instance.file_type
         ))
+        # if that was the only collection with that exact mission, remove the
+        # mission dir aswell
+        if not Collection.objects.filter(mission=instance.mission).exists():
+            rmdir(join(settings.BASE_DIR, "collections", instance.mission))
