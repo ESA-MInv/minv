@@ -16,6 +16,8 @@ from minv.config import DatabaseReader
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
+MINV_CONFIG_DIR = '/etc/minv'
+MINV_DATA_DIR = '/srv/minv'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
@@ -67,7 +69,7 @@ WSGI_APPLICATION = '{{ project_name }}.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
-reader = DatabaseReader(open("/etc/minv/minv.conf"))
+reader = DatabaseReader(open(os.path.join(MINV_CONFIG_DIR, 'minv.conf')))
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',

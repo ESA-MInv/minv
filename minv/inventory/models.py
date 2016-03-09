@@ -54,11 +54,16 @@ class Collection(models.Model):
 
     @property
     def config_dir(self):
-        return join("/etc/minv/collections", self.mission, self.file_type)
+        return join(
+            settings.MINV_CONFIG_DIR, "collections",
+            self.mission, self.file_type
+        )
 
     @property
     def data_dir(self):
-        return join("/srv/minv/collections", self.mission, self.file_type)
+        return join(
+            settings.MINV_DATA_DIR, "collections", self.mission, self.file_type
+        )
 
     class Meta:
         unique_together = (("mission", "file_type"),)
@@ -108,7 +113,7 @@ class Record(models.Model):
     index_file = models.ForeignKey("IndexFile")
     filename = models.CharField(max_length=256, db_index=True)
     filesize = models.IntegerField()
-    checksum = models.CharField(max_length=256)
+    checksum = models.CharField(max_length=256, null=True, blank=True)
 
     # TODO: "row" or "offset" in file
 
@@ -197,4 +202,4 @@ def on_collection_deleted(sender, instance, **kwargs):
         # if that was the only collection with that exact mission, remove the
         # mission dir aswell
         if not Collection.objects.filter(mission=instance.mission).exists():
-            rmdir(join("/srv/minv/collections", instance.mission))
+            rmdir(join(settings.MINV_DATA_DIR, "collections", instance.mission))
