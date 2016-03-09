@@ -3,7 +3,7 @@ DBTMPL=template_postgis
 DBUSER=minv
 
 usage() {
-cat << EOF
+cat <<EOF
 Usage: ${0##*/} [-h] [-u USER] [-d DATABASE]
 Install PostgreSQL with PostGIS and create a new database and user to use 
 for MInv.
@@ -53,6 +53,8 @@ service postgresql initdb
 chkconfig postgresql on
 service postgresql start
 
+cd /home # to suppress warning
+
 sudo -u postgres createdb $DBTMPL
 sudo -u postgres createlang plpgsql $DBTMPL
 
@@ -68,7 +70,9 @@ sudo -u postgres psql -q -d $DBTMPL -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
 
 
 sudo -u postgres psql -q -c "CREATE USER $DBUSER WITH ENCRYPTED PASSWORD '$password' NOSUPERUSER NOCREATEDB NOCREATEROLE ;"
-sudo -u postgres psql -q -c "CREATE DATABASE $DBNAME WITH OWNER $DBUSER TEMPLATE $DBTMPL ENCODING 'UTF-8' ;"
+sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='minv'" | grep -q 1 || {
+    sudo -u postgres psql -q -c "CREATE DATABASE $DBNAME WITH OWNER $DBUSER TEMPLATE $DBTMPL ENCODING 'UTF-8' ;"
+}
 
 
 PG_HBA="`sudo -u postgres psql -qA -d $DBTMPL -c "SHOW data_directory;" | grep -m 1 "^/"`/pg_hba.conf"
@@ -76,11 +80,13 @@ PG_HBA="`sudo -u postgres psql -qA -d $DBTMPL -c "SHOW data_directory;" | grep -
 { sudo -u postgres ex "$PG_HBA" || /bin/true ; } <<END
 g/^\s*local\s*$DBNAME/d
 /#\s*TYPE\s*DATABASE\s*USER\s*.*ADDRESS\s*METHOD/a
-# EOxServer instance: $INSTROOT/$INSTANCE
+# minv instance
 local   $DBNAME $DBUSER md5
 local   $DBNAME all reject
 .
 wq
 END
+
+cd -
 
 service postgresql restart
