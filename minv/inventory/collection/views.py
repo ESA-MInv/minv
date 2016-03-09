@@ -12,6 +12,7 @@ from django.conf import settings
 from minv.inventory.views import login_required
 from minv.inventory import models
 from minv.inventory import forms
+from minv.inventory import queries
 
 
 def check_collection(view):
@@ -92,40 +93,10 @@ def search_view(request, mission, file_type):
         form = forms.RecordSearchForm(collection.locations.all(), request.POST)
         pagination_form = forms.PaginationForm(request.POST)
         if form.is_valid() and pagination_form.is_valid():
-            qs = models.Record.objects.filter(location__collection=collection)
-            for key, value in form.cleaned_data.items():
-                if value is None or value == "":
-                    continue
-                if key == "locations":
-                    if not value:
-                        continue
-                    filter_ = {"location__in": value}
-                elif isinstance(value, list):
-                    if len(value) == 2:
-                        low, high = value
-                        if key == "acquisition_date":
-                            key_low = "begin_date"
-                            key_high = "end_date"
-                        else:
-                            key_low = key
-                            key_high = key
-
-                        filter_ = {
-                            "%s__lte" % key_low: high, "%s__gte" % key_high: low
-                        }
-                    else:
-                        # TODO implement area filtering
-                        filter_ = {}
-
-                else:
-                    filter_ = {key: value}
-
-                qs = qs.filter(**filter_)
-
+            qs = queries.search(collection, form.cleaned_data)
             page = pagination_form.cleaned_data.pop("page")
             per_page = pagination_form.cleaned_data.pop("records_per_page")
             records = Paginator(qs, per_page).page(page)
-
     else:
         form = forms.RecordSearchForm(collection.locations.all())
         pagination_form = forms.PaginationForm(
@@ -157,7 +128,7 @@ def alignment_view(request, mission, file_type):
     if request.method == "POST":
         form = forms.AlignmentForm(collection.locations.all(), request.POST)
         if form.is_valid():
-            results = []
+            results = queries.alignment(collection, form.cleaned_data)
     else:
         form = forms.AlignmentForm(collection.locations.all())
     return render(
