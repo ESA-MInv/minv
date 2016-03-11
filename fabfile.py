@@ -32,6 +32,18 @@ def build(version=None):
             ))
 
 
+def reset_db():
+    sudo("dropdb template_postgis || true", user="postgres")
+    sudo("dropdb minv || true", user="postgres")
+    sudo("dropuser minv || true", user="postgres")
+
+    put("minv/package/minv_install_postgresql.sh")
+    sudo(
+        'printf "abcdefghijklmnopq\nabcdefghijklmnopq" '
+        '| sh minv_install_postgresql.sh'
+    )
+
+
 def deploy(uninstall=False, restart=True, version=None):
     version = version or minv.__version__
     put(join(env.builder_path, "build/RPMS/minv-%s-1.noarch.rpm" % version), "")
@@ -45,23 +57,24 @@ def deploy(uninstall=False, restart=True, version=None):
 
     sudo("minv_setup.sh")
 
+    sudo("""echo "from django.contrib.auth.models import User; User.objects.create_superuser('admin', 'admin@admin.ad', 'admin')" | minv shell""")
+
+    #sudo("print 'admin\nadmin\nadmin\nadmin@admin.ad' | minv createsuperuser")
     if restart:
         sudo("service httpd restart")
 
 
-def reset_db():
-    sudo("dropdb template_postgis", user="postgres")
-    sudo("dropdb minv", user="postgres")
-    sudo("dropuser minv", user="postgres")
-    put("minv/package/minv_install_postgresql.sh")
-    sudo(
-        'printf "abcdefghijklmnopq\nabcdefghijklmnopq" '
-        '| sh minv_install_postgresql.sh'
-    )
-
-
 def load_test_data():
-    put("test/data")
+    # create a folder for data
+    sudo("mkdir -p /var/minv_data")
+
+    # try remove the collection before creating it anew
+    sudo("minv minv_collection -d -m Landsat5 -f SIP-SCENE || true", user="minv")
+
+    # when no collection was there, clean up any remnants
+    sudo("rm -rf /etc/minv/collections/Landsat5 || true")
+
+    # create a new collection with locations
     sudo(
         "minv minv_collection -c -m Landsat5 -f SIP-SCENE "
         "-o http://oads1.pdgs.esa.int/ "
@@ -70,15 +83,19 @@ def load_test_data():
         "-n http://nga2.pdgs.esa.int/",
         user="minv"
     )
+
+    # add the data and mappings
+    put("test/data", "/var/minv_data", use_sudo=True)
     put(
         "test/data/Landsat5/SIP-SCENE/mapping.json",
         "/etc/minv/collections/Landsat5/SIP-SCENE/mapping.json",
-        use_sudo=True
+        use_sudo=True, mode=0755
     )
+    sudo("chown -R minv:minv /var/minv_data")
     sudo(
         "minv minv_ingest -m Landsat5 -f SIP-SCENE "
         "-u http://oads1.pdgs.esa.int/ "
-        "data/Landsat5/SIP-SCENE/0/19930101-000000_19931231-235959_20150709-145236.index",
-        "data/Landsat5/SIP-SCENE/0/19990101-000000_19991231-235959_20150709-144402.index",
+        "/var/minv_data/data/Landsat5/SIP-SCENE/0/19930101-000000_19931231-235959_20150709-145236.index",
+        "/var/minv_data/data/Landsat5/SIP-SCENE/0/19990101-000000_19991231-235959_20150709-144402.index",
         user="minv"
     )

@@ -70,9 +70,7 @@ sudo -u postgres psql -q -d $DBTMPL -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
 
 
 sudo -u postgres psql -q -c "CREATE USER $DBUSER WITH ENCRYPTED PASSWORD '$password' NOSUPERUSER NOCREATEDB NOCREATEROLE ;"
-sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='minv'" | grep -q 1 || {
-    sudo -u postgres psql -q -c "CREATE DATABASE $DBNAME WITH OWNER $DBUSER TEMPLATE $DBTMPL ENCODING 'UTF-8' ;"
-}
+sudo -u postgres psql -q -c "CREATE DATABASE $DBNAME WITH OWNER $DBUSER TEMPLATE $DBTMPL ENCODING 'UTF-8' ;"
 
 
 PG_HBA="`sudo -u postgres psql -qA -d $DBTMPL -c "SHOW data_directory;" | grep -m 1 "^/"`/pg_hba.conf"
