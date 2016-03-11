@@ -92,7 +92,6 @@ class AlignmentTestCase(InventoryMixIn, TestCase):
             filename="C", checksum="C", filesize=1
         )
 
-
     def test_simple(self):
         results = queries.alignment(
             models.Collection.objects.get(

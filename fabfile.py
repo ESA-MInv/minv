@@ -57,9 +57,11 @@ def deploy(uninstall=False, restart=True, version=None):
 
     sudo("minv_setup.sh")
 
-    sudo("""echo "from django.contrib.auth.models import User; User.objects.create_superuser('admin', 'admin@admin.ad', 'admin')" | minv shell""")
-
-    #sudo("print 'admin\nadmin\nadmin\nadmin@admin.ad' | minv createsuperuser")
+    sudo(
+        "echo \"from django.contrib.auth.models import User; "
+        "User.objects.create_superuser('admin', 'admin@admin.ad', 'admin')\" "
+        "| minv shell"
+    )
     if restart:
         sudo("service httpd restart")
 
@@ -95,7 +97,9 @@ def load_test_data():
     sudo(
         "minv minv_ingest -m Landsat5 -f SIP-SCENE "
         "-u http://oads1.pdgs.esa.int/ "
-        "/var/minv_data/data/Landsat5/SIP-SCENE/0/19930101-000000_19931231-235959_20150709-145236.index",
-        "/var/minv_data/data/Landsat5/SIP-SCENE/0/19990101-000000_19991231-235959_20150709-144402.index",
+        "/var/minv_data/data/Landsat5/SIP-SCENE/0/"
+        "19930101-000000_19931231-235959_20150709-145236.index",
+        "/var/minv_data/data/Landsat5/SIP-SCENE/0/"
+        "19990101-000000_19991231-235959_20150709-144402.index",
         user="minv"
     )
