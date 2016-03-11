@@ -178,7 +178,7 @@ class Record(models.Model):
 
 
 class Annotation(models.Model):
-    record = models.ForeignKey("Record")
+    record = models.ForeignKey("Record", related_name="annotations")
     text = models.TextField()
     insertion_time = models.DateTimeField(auto_now_add=True)
 
