@@ -1,3 +1,5 @@
+from django.utils.datastructures import SortedDict
+
 from minv.inventory import models
 
 
@@ -41,32 +43,66 @@ def search(collection, filters=None):
 def alignment(collection, filters=None):
     """ This function performs the alignment check with the given parameters.
     """
-
+    filter_locations = filters.pop("locations", None)
     qs = search(collection, filters)
 
-    # TODO:
-    #
+    result = AlignmentResult()
 
-    result = []
-    locations = list(collection.locations.all())
+    locations_qs = collection.locations.order_by("pk")
+    if filter_locations:
+        locations_qs = locations_qs.filter(pk__in=filter_locations)
+    locations = list(locations_qs)
 
     for location in locations:
         current_qs = qs.filter(location=location)
-        # exclusion_qs = qs.filter(location=location)
-        other_locations = (l for l in locations if l is not location)
+        other_locations = [l for l in locations if l is not location]
 
         current_qs = qs.filter(location__in=other_locations).exclude(
             filename__in=qs.filter(
                 location=location
             ).values_list("filename", flat=True)
-        )
+        ).order_by("filename").values_list("filename", flat=True)
 
+        # TODO: add missalignments based on checksum!
 
-        # for other_location in other_locations:
-        #     excludes = qs.filter(
-        #         location=other_location
-        #     ).values_list("filename", flat=True)
-        #     current_qs = current_qs.exclude(filename__in=excludes)
-
-        result.append((location, current_qs))
+        result[location] = current_qs
     return result
+
+
+class AlignmentResult(SortedDict):
+    def iter_missalignments(self):
+        # set up dicts for fast access
+        next_filenames = SortedDict((location, None) for location in self.keys())
+        iters = dict((location, iter(qs)) for location, qs in self.items())
+
+        while True:
+            for location, filename in next_filenames.items():
+                if filename is None:
+                    try:
+                        next_filenames[location] = next(iters[location])
+                    except StopIteration:
+                        next_filenames[location] = None
+
+            print next_filenames
+            # select lowest id or stop if none is left
+            filenames = next_filenames.values()
+            try:
+                lowest = min(f for f in filenames if f is not None)
+            except ValueError:
+                break
+
+            # print lowest, [
+            #     (record if record and record.filename == lowest else None)
+            #     for record in records
+            # ]
+
+            yield lowest, [
+                models.Record.objects.get(filename=lowest, location=location)
+                if filename != lowest else None
+                for location, filename in next_filenames.items()
+            ]
+
+            # pop next values
+            for key, filename in next_filenames.items():
+                if filename and filename == lowest:
+                    next_filenames[key] = None
