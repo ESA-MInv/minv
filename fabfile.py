@@ -94,12 +94,26 @@ def load_test_data():
         use_sudo=True, mode=0755
     )
     sudo("chown -R minv:minv /var/minv_data")
+
+    # ingest data into collection/locations
     sudo(
         "minv minv_ingest -m Landsat5 -f SIP-SCENE "
         "-u http://oads1.pdgs.esa.int/ "
         "/var/minv_data/data/Landsat5/SIP-SCENE/0/"
         "19930101-000000_19931231-235959_20150709-145236.index",
-        "/var/minv_data/data/Landsat5/SIP-SCENE/0/"
-        "19990101-000000_19991231-235959_20150709-144402.index",
+        user="minv"
+    )
+    sudo(
+        "minv minv_ingest -m Landsat5 -f SIP-SCENE "
+        "-u http://oads2.pdgs.esa.int/ "
+        "/var/minv_data/data/Landsat5/SIP-SCENE/1/"
+        "19930101-000000_19931231-235959_20150709-145236.index",
+        user="minv"
+    )
+    sudo(
+        "minv minv_ingest -m Landsat5 -f SIP-SCENE "
+        "-u http://nga1.pdgs.esa.int/ "
+        "/var/minv_data/data/Landsat5/SIP-SCENE/2/"
+        "19930101-000000_19931231-235959_20150709-145236.index",
         user="minv"
     )
