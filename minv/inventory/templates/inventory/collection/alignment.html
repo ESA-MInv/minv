@@ -3,62 +3,9 @@
 {% load inventory_extras %}
 
 {% block head %}
-<script src="{% static 'inventory/js/ol.js' %}"></script>
-<link rel="stylesheet" href="{% static 'inventory/css/ol.css' %}">
 {{ block.super }}
-<style>
-
-table {
-  table-layout: fixed;
-}
-.rotated-table-inside {
-  padding-right: 130px
-}
-
-.table-header-rotated {
-  border-collapse: collapse;
-}
-/*.table-header-rotated td {
-  width: 30px;
-}*/
-.table-header-rotated td {
-  /*text-align: center;*/
-  /*padding: 10px 5px;*/
-  /*border: 1px solid #ccc;*/
-}
-.table-header-rotated th.rotate {
-  height: 250px;
-  white-space: nowrap;
-  padding: 8px;
-}
-.table-header-rotated th.rotate > div {
-  /*-webkit-transform: translate(25px, 51px) rotate(315deg);*/
-          transform: translate(22px, 0px) rotate(300deg);
-  width: 30px;
-}
-.table-header-rotated th.rotate > div > span {
-  width: 220px;
-  border-bottom: 1px solid #ddd;
-  padding: 5px 10px;
-}
-.table-header-rotated th.row-header {
-  /*padding: 0 10px;*/
-  /*border-bottom: 1px solid #ccc;*/
-}
-
-.table-header-rotated thead th {
-  border: none !important;
-}
-
-td {
-  border-left: 1px solid #ddd;
-  border-top: 1px solid #ddd;
-  border-right: 1px solid #ddd;
-  text-align: center;
-}
-</style>
+<link rel="stylesheet" href="{% static 'inventory/css/alignment.css' %}"/>
 {% endblock %}
-
 
 {% block collection_header %}
 {% with "alignment" as current %}
@@ -99,42 +46,50 @@ td {
       {% if not results %}
         No missalignments were detected.
       {% else %}
-        <div class="rotated-table-inside">
-          <table class="table table-striped table-condensed table-header-rotated">
-           <colgroup>
-              <col style="width: auto;">
-            {% for location in results.keys %}
-              <col style="width: 50px">
-            {% endfor %}
+        <table class="table table-striped table-condensed table-hover table-header-rotated">
+         <colgroup>
+            <col style="width: auto;">
+          {% for location in locations %}
+            <col style="width: 50px">
+          {% endfor %}
+            <col style="width: 150px">
           </colgroup>
-            <thead>
-              <tr>
-                <th></th>
-              {% for location in results.keys %}
-                <th class="rotate"><div><span>{{ location }}</span></div></th>
-              {% endfor %}
-              </tr>
-            </thead>
-            <tbody>
-            {% for record, missalignments in results.iter_missalignments %}
-              <tr>
-                <th>{{ record }}</th>
-              {% for m in missalignments %}
-                <!-- <td>{% if m %}{{ m.annotations.all.count }}{% endif %}
-                </td> -->
-                <td>
-                  {% if m %}
-                    <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+          <thead>
+            <tr>
+              <th>Filename</th>
+            {% for location in locations %}
+              <th class="rotate"><div><span>{{ location }}</span></div></th>
+            {% endfor %}
+              <th>Annotations</th>
+            </tr>
+          </thead>
+          <tbody>
+
+          {% for result in results %}
+            <tr>
+              <th>{{ result.filename }}</th>
+              {% for i in result.incidences %}
+                <td class="mark-inside">
+                {% if i %}
+                  {% if result.checksum_mismatch %}
+                    <span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span>
                   {% else %}
-                    <span class="glyphicon glyphicon-remove text-danger" aria-hidden="true"></span>
+                    <span class="glyphicon glyphicon-ok ok" aria-hidden="true"></span>
                   {% endif %}
+                {% else %}
+                  <span class="glyphicon glyphicon-remove missing" aria-hidden="true"></span>
+                {% endif %}
                 </td>
               {% endfor %}
-              </tr>
-            {% endfor %}
-            </tbody>
-          </table>
-        </div>
+              <td>
+              {% if result.annotation_count > 0 %}
+                <a href="#" data-toggle="popover" data-trigger="hover" data-placement="left" data-html="true" data-title="Annotations" data-content="{{ result.annotations|join:"<div class='divider'/>" }}">{{ result.annotations|join:' | ' }}</a>
+              {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
       {% endif %}
     </div>
   </div>

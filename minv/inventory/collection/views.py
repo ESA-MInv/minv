@@ -124,18 +124,20 @@ def alignment_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
-    results = None
+    locations = results = None
     if request.method == "POST":
         form = forms.AlignmentForm(collection.locations.all(), request.POST)
         if form.is_valid():
-            results = queries.alignment(collection, form.cleaned_data)
+            locations, results = queries.alignment_new(
+                collection, form.cleaned_data
+            )
     else:
         form = forms.AlignmentForm(collection.locations.all())
     return render(
         request, "inventory/collection/alignment.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection, "alignment_form": form,
-            "results": results
+            "locations": locations, "results": results
         }
     )
 

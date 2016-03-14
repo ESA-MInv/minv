@@ -1,4 +1,7 @@
 from django.utils.datastructures import SortedDict
+from django.template.loader import render_to_string
+from django.db import connection
+from django.db.models import Min, Count
 
 from minv.inventory import models
 
@@ -43,7 +46,7 @@ def search(collection, filters=None):
 def alignment(collection, filters=None):
     """ This function performs the alignment check with the given parameters.
     """
-    filter_locations = filters.pop("locations", None)
+    filter_locations = filters.pop("locations", None) if filters else None
     qs = search(collection, filters)
 
     result = AlignmentResult()
@@ -67,6 +70,39 @@ def alignment(collection, filters=None):
 
         result[location] = current_qs
     return result
+
+
+def alignment_new(collection, filters=None):
+    filter_locations = filters.pop("locations", None) if filters else None
+    qs = search(collection, filters)
+    qs = qs.values("filename").annotate(Min("checksum"), Count("annotations"))
+
+    locations_qs = collection.locations.order_by("pk")
+    if filter_locations:
+        locations_qs = locations_qs.filter(pk__in=filter_locations)
+    locations = list(locations_qs)
+
+    query = render_to_string("inventory/collection/alignment.sql", {
+        "locations": locations, "base_query": qs.query
+    })
+
+    cursor = connection.cursor()
+    cursor.execute(query)
+
+    def _result_generator(cursor):
+        for row in cursor:
+            checksums = row[3:]
+            yield {
+                "filename": row[0], "checksum_mismatch": bool(
+                    len(set([c for c in checksums if c is not None]))-1
+                ),
+                "incidences": checksums, "annotation_count": row[2],
+                "annotations": models.Annotation.objects.filter(
+                    record__filename=row[0]
+                ).values_list("text", flat=True) if row[2] else []
+            }
+
+    return locations, _result_generator(cursor)
 
 
 class AlignmentResult(SortedDict):
