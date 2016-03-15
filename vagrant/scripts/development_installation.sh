@@ -4,6 +4,7 @@ pip install --editable .
 
 # Prepare DB
 python /srv/minv/manage.py syncdb --noinput --traceback
+python /srv/minv/manage.py collectstatic --noinput
 
 # Create admin user
 python /srv/minv/manage.py shell 1>/dev/null 2>&1 <<EOF
@@ -17,5 +18,3 @@ if authenticate(username='admin', password='admin') is None:
     user.save()
 
 EOF
-
-python /srv/minv/manage.py collectstatic --noinput

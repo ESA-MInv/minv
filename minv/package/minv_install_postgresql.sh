@@ -12,6 +12,7 @@ for MInv.
     -u USER      name of the database user. defaults to 'minv'
     -d DATABASE  name of the to be created database. defaults to 'minv'
     -t TEMPLATE  name of the template database. defaults to 'template_postgis'
+    --drop       drop the previous user/database if they exist
 EOF
 }
 
@@ -29,6 +30,9 @@ while [[ $# > 1 ]] ; do
         -t|--template)
             DBTMPL="$2"
             shift
+            ;;
+        --drop)
+            DROP=YES
             ;;
         *)
             usage
@@ -54,6 +58,11 @@ chkconfig postgresql on
 service postgresql start
 
 cd /home # to suppress warning
+
+[ -n $DROP ] && {
+    sudo -u postgres dropdb $DBNAME || true
+    sudo -u postgres dropuser $DBUSER || true
+}
 
 sudo -u postgres createdb $DBTMPL
 sudo -u postgres createlang plpgsql $DBTMPL

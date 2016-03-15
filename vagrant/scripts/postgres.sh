@@ -1,4 +1,4 @@
-printf "abcdefghijklmnopq\nabcdefghijklmnopq" | sh /var/minv/minv/package/minv_install_postgresql.sh
+printf "abcdefghijklmnopq\nabcdefghijklmnopq" | sh /var/minv/minv/package/minv_install_postgresql.sh --drop
 
 
 # adding privileges for testing
