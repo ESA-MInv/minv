@@ -1,4 +1,3 @@
-from django.utils.datastructures import SortedDict
 from django.template.loader import render_to_string
 from django.db import connection
 from django.db.models import Min, Count
@@ -6,10 +5,19 @@ from django.db.models import Min, Count
 from minv.inventory import models
 
 
-def search(collection, filters=None):
+def search(collection, filters=None, queryset=None):
+    """ Performs a search for :class:`Record`s on the specified
+    :class:`Collection` with the given filters applied.
+
+    :param collection: the collection to search on
+    :param filters: a dictionary of search parameters
+
+    :returns: the search results
+    :rtype: :class:`QuerySet`
     """
-    """
-    qs = models.Record.objects.filter(location__collection=collection)
+    qs = queryset or models.Record.objects.filter(
+        location__collection=collection
+    )
     if filters:
         for key, value in filters.items():
             if value is None or value == "":
@@ -44,52 +52,58 @@ def search(collection, filters=None):
 
 
 def alignment(collection, filters=None):
-    """ This function performs the alignment check with the given parameters.
+    """ This function performs the alignment check on the specified
+    :class:`Collection` with the given filters applied.
+
+    :returns: the alignment checking results
+    :rtype: :class:`AlignmentQuerySet`
     """
     filter_locations = filters.pop("locations", None) if filters else None
-    qs = search(collection, filters)
-
-    result = AlignmentResult()
 
     locations_qs = collection.locations.order_by("pk")
     if filter_locations:
         locations_qs = locations_qs.filter(pk__in=filter_locations)
     locations = list(locations_qs)
 
-    for location in locations:
-        current_qs = qs.filter(location=location)
-        other_locations = [l for l in locations if l is not location]
+    qs = AlignmentQuerySet(locations)
+    qs = search(collection, filters, qs)
 
-        current_qs = qs.filter(location__in=other_locations).exclude(
-            filename__in=qs.filter(
-                location=location
-            ).values_list("filename", flat=True)
-        ).order_by("filename").values_list("filename", flat=True)
-
-        # TODO: add missalignments based on checksum!
-
-        result[location] = current_qs
-    return result
+    return locations, qs
 
 
-def alignment_new(collection, filters=None):
-    filter_locations = filters.pop("locations", None) if filters else None
-    qs = search(collection, filters)
-    qs = qs.values("filename").annotate(Min("checksum"), Count("annotations"))
+class AlignmentQuerySet(object):
+    """ Result set for alignment checking.
 
-    locations_qs = collection.locations.order_by("pk")
-    if filter_locations:
-        locations_qs = locations_qs.filter(pk__in=filter_locations)
-    locations = list(locations_qs)
+    The :class:`AlignmentQuerySet` is an object that mimicks Django's
+    :class:`QuerySet` but only implements some of the necessary functions.
+    """
+    def __init__(self, locations):
+        self._locations = locations
+        self._qs = models.Record.objects.filter(
+            location__in=locations
+        ).values("filename").annotate(
+            Min("checksum"), Count("annotations")
+        )
 
-    query = render_to_string("inventory/collection/alignment.sql", {
-        "locations": locations, "base_query": qs.query
-    })
+    def __iter__(self):
+        """ Executes the underlying query. Yields a :class:`dict` for each
+        returned row having the following keys:
+            * ``filename``: the current filename
+            * ``incidences``: the incidences of the filenames across all
+              locations. A :class:`list` containing the checksum for each
+              location or ``None`` if the location does not have a record with
+              that filename.
+            * ``annotation_count``: the number of annotations for the records of
+              that filename.
+            * ``annotations``: a :class:`QuerySet` with the actual annotations
 
-    cursor = connection.cursor()
-    cursor.execute(query)
+        """
+        query = render_to_string("inventory/collection/alignment.sql", {
+            "locations": self._locations, "base_query": self._qs.query
+        })
 
-    def _result_generator(cursor):
+        cursor = connection.cursor()
+        cursor.execute(query)
         for row in cursor:
             checksums = row[3:]
             yield {
@@ -98,47 +112,34 @@ def alignment_new(collection, filters=None):
                 ),
                 "incidences": checksums, "annotation_count": row[2],
                 "annotations": models.Annotation.objects.filter(
-                    record__filename=row[0]
-                ).values_list("text", flat=True) if row[2] else []
+                    record__filename=row[0], record__location__in=self._locations
+                ).values_list("text", flat=True)
+                if row[2] else models.Annotation.objects.none()
             }
 
-    return locations, _result_generator(cursor)
+    @property
+    def locations(self):
+        """ Returns the locations this :class:`AlignmentQuerySet` is associated
+        with.
+        """
+        return self._locations
 
+    def __len__(self):
+        """ Returns the size of the underlying :class:`QuerySet`.
+        """
+        return self._qs.count()
 
-class AlignmentResult(SortedDict):
-    def iter_missalignments(self):
-        # set up dicts for fast access
-        next_filenames = SortedDict((location, None) for location in self.keys())
-        iters = dict((location, iter(qs)) for location, qs in self.items())
+    def __getitem__(self, slc):
+        """ Passes the slice to the underlying :class:`QuerySet`.
+        """
+        if not isinstance(slc, slice):
+            raise NotImplementedError("Index access is not supported.")
+        self._qs = self._qs[slc]
+        return self
 
-        while True:
-            for location, filename in next_filenames.items():
-                if filename is None:
-                    try:
-                        next_filenames[location] = next(iters[location])
-                    except StopIteration:
-                        next_filenames[location] = None
-
-            print next_filenames
-            # select lowest id or stop if none is left
-            filenames = next_filenames.values()
-            try:
-                lowest = min(f for f in filenames if f is not None)
-            except ValueError:
-                break
-
-            # print lowest, [
-            #     (record if record and record.filename == lowest else None)
-            #     for record in records
-            # ]
-
-            yield lowest, [
-                models.Record.objects.get(filename=lowest, location=location)
-                if filename != lowest else None
-                for location, filename in next_filenames.items()
-            ]
-
-            # pop next values
-            for key, filename in next_filenames.items():
-                if filename and filename == lowest:
-                    next_filenames[key] = None
+    def filter(self, *args, **kwargs):
+        """ Passes filters to the underlying :class:`QuerySet`.
+        :returns: self
+        """
+        self._qs = self._qs.filter(*args, **kwargs)
+        return self

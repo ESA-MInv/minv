@@ -124,20 +124,27 @@ def alignment_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
-    locations = results = None
+    records = None
+    locations = None
     if request.method == "POST":
         form = forms.AlignmentForm(collection.locations.all(), request.POST)
-        if form.is_valid():
-            locations, results = queries.alignment_new(
-                collection, form.cleaned_data
-            )
+        pagination_form = forms.PaginationForm(request.POST)
+        if form.is_valid() and pagination_form.is_valid():
+            locations, qs = queries.alignment(collection, form.cleaned_data)
+            page = pagination_form.cleaned_data.pop("page")
+            per_page = pagination_form.cleaned_data.pop("records_per_page")
+            records = Paginator(qs, per_page).page(page)
     else:
         form = forms.AlignmentForm(collection.locations.all())
+        pagination_form = forms.PaginationForm(
+            initial={'page': '1', 'records_per_page': '15'}
+        )
     return render(
         request, "inventory/collection/alignment.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection, "alignment_form": form,
-            "locations": locations, "results": results
+            "pagination_form": pagination_form, "records": records,
+            "locations": locations
         }
     )
 

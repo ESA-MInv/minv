@@ -45,39 +45,39 @@
       </div>
     </div>
     <div role="tabpanel" class="tab-pane {% if not records == None %}active{% endif %}" id="results">
-      {% if not records %}
-        The search returned no results.
-      {% else %}
-        <p>Search hit {{ records.paginator.count }} records, showing {{ records|length }}.</p>
-        {% for record in records %}
-          {{ record }}
-        {% endfor %}
-        <nav>
-          <ul class="pagination">
-            {% if records.number > 2 %}
-              <li>
-                <a href="#" data-page="1" aria-label="Previous">
-                  <span aria-hidden="true">&laquo;</span>
-                </a>
-              </li>
-            {% endif %}
-            {% if records.has_previous %}
-              <li><a href="#" data-page="{{ records.previous_page_number }}">{{ records.previous_page_number }}</a></li>
-            {% endif %}
-            <li class="active"><a href="#">{{ records.number }}<span class="sr-only">(current)</span></a></li>
-            {% if records.has_next %}
-              <li><a href="#" data-page="{{ records.next_page_number }}">{{ records.next_page_number }}</a></li>
-            {% endif %}
-            {% if records.has_next and records.next_page_number < records.paginator.num_pages %}
+    {% if not records %}
+      The search returned no results.
+    {% else %}
+      <p>Search hit {{ records.paginator.count }} records, showing {{ records|length }}.</p>
+      {% for record in records %}
+        {{ record }}
+      {% endfor %}
+      <nav>
+        <ul class="pagination">
+          {% if records.number > 2 %}
             <li>
-              <a href="#" data-page="{{ records.paginator.num_pages }}" aria-label="Next">
-                <span aria-hidden="true">&raquo;</span>
+              <a href="#" data-page="1" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
               </a>
             </li>
-            {% endif %}
-          </ul>
-        </nav>
-      {% endif %}
+          {% endif %}
+          {% if records.has_previous %}
+            <li><a href="#" data-page="{{ records.previous_page_number }}">{{ records.previous_page_number }}</a></li>
+          {% endif %}
+          <li class="active"><a href="#">{{ records.number }}<span class="sr-only">(current)</span></a></li>
+          {% if records.has_next %}
+            <li><a href="#" data-page="{{ records.next_page_number }}">{{ records.next_page_number }}</a></li>
+          {% endif %}
+          {% if records.has_next and records.next_page_number < records.paginator.num_pages %}
+          <li>
+            <a href="#" data-page="{{ records.paginator.num_pages }}" aria-label="Next">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
     </div>
   </div>
 </form>

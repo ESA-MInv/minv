@@ -16,11 +16,11 @@
 {% block collection_content %}
 
 <ul class="nav nav-tabs" role="tablist">
-  <li role="presentation" class="{% if results == None %}active{% endif %}">
+  <li role="presentation" class="{% if records == None %}active{% endif %}">
     <a href="#parameters" aria-controls="home" role="tab" data-toggle="tab">Parameters</a>
   </li>
-  <li role="presentation" class="{% if results == None %}disabled{% else %}active{% endif %}">
-    <a href="#results" aria-controls="profile" role="tab" {% if not results == None %}data-toggle="tab"{% endif %}>Results</a>
+  <li role="presentation" class="{% if records == None %}disabled{% else %}active{% endif %}">
+    <a href="#records" aria-controls="profile" role="tab" {% if not records == None %}data-toggle="tab"{% endif %}>Results</a>
   </li>
 </ul>
 
@@ -28,7 +28,7 @@
   {% csrf_token %}
 
   <div class="tab-content">
-    <div role="tabpanel" class="tab-pane {% if results == None %}active{% endif %}" id="parameters">
+    <div role="tabpanel" class="tab-pane {% if records == None %}active{% endif %}" id="parameters">
       <div class="form-group">
         <div class="col-sm-offset-2 col-sm-10">
           <button type="submit" class="btn btn-default">Perform Alignment Check</button>
@@ -42,55 +42,81 @@
         </div>
       </div>
     </div>
-    <div role="tabpanel" class="tab-pane {% if not results == None %}active{% endif %}" id="results">
-      {% if not results %}
-        No missalignments were detected.
-      {% else %}
-        <table class="table table-striped table-condensed table-hover table-header-rotated">
-         <colgroup>
-            <col style="width: auto;">
+    <div role="tabpanel" class="tab-pane {% if not records == None %}active{% endif %}" id="records">
+    {% if not records %}
+      No missalignments were detected.
+    {% else %}
+      <p>Search hit {{ records.paginator.count }} records, showing {{ records|length }}.</p>
+      <table class="table table-striped table-condensed table-hover table-header-rotated">
+       <colgroup>
+          <col style="width: auto;">
+        {% for location in locations %}
+          <col style="width: 50px">
+        {% endfor %}
+          <col style="width: 150px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Filename</th>
           {% for location in locations %}
-            <col style="width: 50px">
+            <th class="rotate"><div><span>{{ location }}</span></div></th>
           {% endfor %}
-            <col style="width: 150px">
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Filename</th>
-            {% for location in locations %}
-              <th class="rotate"><div><span>{{ location }}</span></div></th>
-            {% endfor %}
-              <th>Annotations</th>
-            </tr>
-          </thead>
-          <tbody>
+            <th>Annotations</th>
+          </tr>
+        </thead>
+        <tbody>
 
-          {% for result in results %}
-            <tr>
-              <th>{{ result.filename }}</th>
-              {% for i in result.incidences %}
-                <td class="mark-inside">
-                {% if i %}
-                  {% if result.checksum_mismatch %}
-                    <span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span>
-                  {% else %}
-                    <span class="glyphicon glyphicon-ok ok" aria-hidden="true"></span>
-                  {% endif %}
+        {% for record in records %}
+          <tr>
+            <th>{{ record.filename }}</th>
+            {% for i in record.incidences %}
+              <td class="mark-inside">
+              {% if i %}
+                {% if record.checksum_mismatch %}
+                  <span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span>
                 {% else %}
-                  <span class="glyphicon glyphicon-remove missing" aria-hidden="true"></span>
+                  <span class="glyphicon glyphicon-ok ok" aria-hidden="true"></span>
                 {% endif %}
-                </td>
-              {% endfor %}
-              <td>
-              {% if result.annotation_count > 0 %}
-                <a href="#" data-toggle="popover" data-trigger="hover" data-placement="left" data-html="true" data-title="Annotations" data-content="{{ result.annotations|join:"<div class='divider'/>" }}">{{ result.annotations|join:' | ' }}</a>
+              {% else %}
+                <span class="glyphicon glyphicon-remove missing" aria-hidden="true"></span>
               {% endif %}
               </td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      {% endif %}
+            {% endfor %}
+            <td>
+            {% if record.annotation_count > 0 %}
+              <a href="#" data-toggle="popover" data-trigger="hover" data-placement="left" data-html="true" data-title="Annotations" data-content="{{ record.annotations|join:"<div class='divider'/>" }}">{{ record.annotations|join:' | ' }}</a>
+            {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <nav>
+        <ul class="pagination">
+          {% if records.number > 2 %}
+            <li>
+              <a href="#" data-page="1" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+          {% endif %}
+          {% if records.has_previous %}
+            <li><a href="#" data-page="{{ records.previous_page_number }}">{{ records.previous_page_number }}</a></li>
+          {% endif %}
+          <li class="active"><a href="#">{{ records.number }}<span class="sr-only">(current)</span></a></li>
+          {% if records.has_next %}
+            <li><a href="#" data-page="{{ records.next_page_number }}">{{ records.next_page_number }}</a></li>
+          {% endif %}
+          {% if records.has_next and records.next_page_number < records.paginator.num_pages %}
+          <li>
+            <a href="#" data-page="{{ records.paginator.num_pages }}" aria-label="Next">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
     </div>
   </div>
 </form>
