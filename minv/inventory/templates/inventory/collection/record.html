@@ -1,0 +1,80 @@
+{% extends "inventory/collection/base.html" %}
+{% load staticfiles %}
+{% load l10n %}
+{% load inventory_extras %}
+
+{% block head %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'inventory/css/alignment.css' %}"/>
+{% endblock %}
+
+
+{% block collection_header %}
+{% with record as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}
+
+
+{% block collection_content %}
+
+<h4>{{ filename }}</h4>
+
+<table class="table table-striped table-condensed">
+  <colgroup>
+    <col style="width: 18em;">
+    <col style="width: auto">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Locations</td>
+      <td>
+        {% for location, record in locations.items %}
+          {% if record %}
+            <span class="glyphicon glyphicon-ok ok" aria-hidden="true"></span>
+          {% else %}
+            <span class="glyphicon glyphicon-remove missing" aria-hidden="true"></span>
+          {% endif %}
+          {{ location }}
+          <br>
+        {% endfor %}
+      </td>
+    </tr>
+    {% localize off %}
+    {% for field_id, field_name in fields.items %}
+    <tr>
+      <th>{% if field_id in differences %}<span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span> {% endif %}{{ field_name }}</th>
+      {% if not field_id in differences %}
+        {% with records.0|get:field_id as field_value %}
+        <td>{% if field_value != None %}{{ field_value }}{% endif %}</td>
+        {% endwith %}
+      {% else %}
+        <td>
+          <table class="table table-condensed table-bordered table-inline">
+          {% for location, record in locations.items %}
+            <tr>
+              {% if record %}<tr><th>{{ location }}</th><td>{{ record | get:field_id }}</td></tr>{% endif %}
+            </tr>
+          {% endfor %}
+          </table>
+        </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+    {% endlocalize %}
+  </tbody>
+</table>
+
+{% endblock %}
+
+{% block collection_footer %}
+{% with record as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}

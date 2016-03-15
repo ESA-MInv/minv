@@ -9,7 +9,7 @@ urlpatterns = [
         url(r'^$', views.detail_view, name="detail"),
         url(r'^harvest/$', views.harvest_view, name="harvest"),
         url(r'^search/$', views.search_view, name="search"),
-        url(r'^record/(?P<filename>[\w{}.-]+)$',
+        url(r'^records/(?P<filename>[\w{}.-]+)$',
             views.record_view, name="record"
         ),
         url(r'^alignment/$', views.alignment_view, name="alignment"),

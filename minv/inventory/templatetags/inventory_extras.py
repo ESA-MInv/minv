@@ -18,3 +18,11 @@ def pairwise(iterable):
 @register.inclusion_tag("inventory/extra/form.html")
 def render_form(form):
     return {"form": form}
+
+
+@register.filter
+def get(obj, key):
+    try:
+        return obj[key]
+    except TypeError:
+        return getattr(obj, key)

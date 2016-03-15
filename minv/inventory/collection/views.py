@@ -8,11 +8,13 @@ from django.core.paginator import Paginator
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.conf import settings
+from django.utils.datastructures import SortedDict
 
 from minv.inventory.views import login_required
 from minv.inventory import models
 from minv.inventory import forms
 from minv.inventory import queries
+from minv.utils import get_or_none
 
 
 def check_collection(view):
@@ -115,7 +117,42 @@ def search_view(request, mission, file_type):
 @login_required(login_url="login")
 @check_collection
 def record_view(request, mission, file_type, filename):
-    pass
+    collection = models.Collection.objects.get(
+        mission=mission, file_type=file_type
+    )
+
+    records = models.Record.objects.filter(
+        filename=filename, location__collection=collection
+    )
+
+    display_fields = SortedDict(
+        (("checksum", "Checksum"),) + models.SEARCH_FIELD_CHOICES
+    )
+
+    locations = SortedDict((
+        (location, get_or_none(records, location=location))
+        for location in collection.locations.all()
+    ))
+
+    reference_record, others = records[0], records[1:]
+    differences = set()
+    for field in display_fields.keys():
+        for record in others:
+            if getattr(record, field) != getattr(reference_record, field):
+                differences.add(field)
+
+    if not records.exists():
+        pass  # TODO: raise
+
+    return render(
+        request, "inventory/collection/record.html", {
+            "collections": models.Collection.objects.all(),
+            "collection": collection, "filename": filename,
+            "fields": display_fields,
+            "locations": locations, "records": records,
+            "differences": differences
+        }
+    )
 
 
 @login_required(login_url="login")

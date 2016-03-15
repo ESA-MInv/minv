@@ -61,14 +61,15 @@
           {% for location in locations %}
             <th class="rotate"><div><span>{{ location }}</span></div></th>
           {% endfor %}
-            <th>Annotations</th>
+            <th style="text-align: right">Annotations</th>
           </tr>
         </thead>
         <tbody>
 
         {% for record in records %}
           <tr>
-            <th>{{ record.filename }}</th>
+            <th>
+              <a href="{% url 'inventory:collection:record' mission=collection.mission file_type=collection.file_type filename=record.filename%}">{{ record.filename }}</a></th>
             {% for i in record.incidences %}
               <td class="mark-inside">
               {% if i %}
