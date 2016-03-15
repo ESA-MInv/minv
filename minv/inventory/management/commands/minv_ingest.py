@@ -21,6 +21,7 @@ class Command(BaseCommand):
 
         for index_file_name in args:
             try:
+                # TODO: print number of records ingested
                 ingest(
                     options["mission"], options["file_type"], options["url"],
                     index_file_name
