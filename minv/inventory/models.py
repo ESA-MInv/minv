@@ -147,7 +147,7 @@ class Record(models.Model):
 
     processing_centre = models.CharField(max_length=256, null=True, blank=True,
                                          db_index=True)
-    processing_data = models.DateTimeField(null=True, blank=True, db_index=True)
+    processing_date = models.DateTimeField(null=True, blank=True, db_index=True)
     processing_mode = models.CharField(max_length=64, null=True, blank=True,
                                        db_index=True)
     processor_version = models.CharField(max_length=32, null=True, blank=True,
