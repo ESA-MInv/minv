@@ -234,6 +234,21 @@ class RecordSearchForm(forms.Form):
                     )
 
 
+class AddAnnotationForm(forms.Form):
+    def __init__(self, locations, *args, **kwargs):
+        super(AddAnnotationForm, self).__init__(*args, **kwargs)
+        self.fields["location"] = forms.ChoiceField(
+            required=False,
+            choices=[("", "-----")] + [
+                (location.id, str(location)) for location in locations
+            ],
+            widget=forms.Select(attrs=attrs)
+        )
+        self.fields["text"] = forms.CharField(
+            widget=forms.Textarea(attrs=attrs)
+        )
+
+
 class AlignmentForm(forms.Form):
     def __init__(self, locations, *args, **kwargs):
         """ Dynamically create form fields for eligible model fields.

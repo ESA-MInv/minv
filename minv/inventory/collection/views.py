@@ -120,15 +120,12 @@ def record_view(request, mission, file_type, filename):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
-
     records = models.Record.objects.filter(
         filename=filename, location__collection=collection
     )
-
     display_fields = SortedDict(
         (("checksum", "Checksum"),) + models.SEARCH_FIELD_CHOICES
     )
-
     locations = SortedDict((
         (location, get_or_none(records, location=location))
         for location in collection.locations.all()
@@ -141,6 +138,27 @@ def record_view(request, mission, file_type, filename):
             if getattr(record, field) != getattr(reference_record, field):
                 differences.add(field)
 
+    if request.method == "POST":
+        add_annotation_form = forms.AddAnnotationForm(
+            [record.location for record in records], request.POST
+        )
+        if add_annotation_form.is_valid():
+            data = add_annotation_form.cleaned_data
+            annotation_records = [
+                models.Record.objects.get(
+                    filename=filename, location=data["location"]
+                )
+            ] if data["location"] else records
+            for record in annotation_records:
+                models.Annotation.objects.create(
+                    record=record, text=data["text"]
+                )
+            pass
+    else:
+        add_annotation_form = forms.AddAnnotationForm(
+            [record.location for record in records]
+        )
+
     if not records.exists():
         pass  # TODO: raise
 
@@ -150,9 +168,18 @@ def record_view(request, mission, file_type, filename):
             "collection": collection, "filename": filename,
             "fields": display_fields,
             "locations": locations, "records": records,
-            "differences": differences
+            "differences": differences,
+            "add_annotation_form": add_annotation_form
         }
     )
+
+
+# @login_required(login_url="login")
+# @check_collection
+# def annotations_view(request, mission, file_type, filename):
+#     return redirect("inventory:collection:record",
+#         mission=mission, file_type=file_type, filename=filename
+#     )
 
 
 @login_required(login_url="login")

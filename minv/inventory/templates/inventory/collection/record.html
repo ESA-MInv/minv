@@ -56,20 +56,38 @@
         {% endwith %}
       {% else %}
         <td>
-          <table class="table table-condensed table-bordered table-inline">
+          <table class="table table-condensed table-bordered table-nested">
           {% for location, record in locations.items %}
-            <tr>
-              {% if record %}<tr><th>{{ location }}</th><td>{{ record | get:field_id }}</td></tr>{% endif %}
-            </tr>
+            {% if record %}<tr><th>{{ location }}</th><td>{{ record | get:field_id }}</td></tr>{% endif %}
           {% endfor %}
           </table>
         </td>
       {% endif %}
     </tr>
     {% endfor %}
+    <tr>
+      <th>Annotations</th>
+      <td>
+      {% for location, record in locations.items %}
+        {% if record and record.annotations.exists %}
+          <b>{{ location }}</b>
+          {% for annotation in record.annotations.all %}
+          <pre>{{ annotation.text }}</pre>
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+      </td>
+    </tr>
     {% endlocalize %}
   </tbody>
 </table>
+
+<form class="form" action="{% url 'inventory:collection:record' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
+  {% csrf_token %}
+  {% render_form add_annotation_form %}
+      <button type="submit" class="btn btn-default">Add Annotation</button>
+</form>
+
 
 {% endblock %}
 
