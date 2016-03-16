@@ -291,10 +291,11 @@ def alignment_view(request, mission, file_type):
 
         response = StreamingHttpResponse(f, content_type="text/csv")
         response["Content-Length"] = str(size)
-        response["Content-Disposition"] = 'inline; filename="alignment-%s.csv"' % (
-            now().replace(microsecond=0, tzinfo=None).isoformat("T")
+        response["Content-Disposition"] = (
+            'inline; filename="alignment-%s.csv"' % (
+                now().replace(microsecond=0, tzinfo=None).isoformat("T")
+            )
         )
-        # TODO: filename
         return response
 
 
