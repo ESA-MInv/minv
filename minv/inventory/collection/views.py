@@ -189,12 +189,54 @@ def record_view(request, mission, file_type, filename):
     )
 
 
-# @login_required(login_url="login")
-# @check_collection
-# def annotations_view(request, mission, file_type, filename):
-#     return redirect("inventory:collection:record",
-#         mission=mission, file_type=file_type, filename=filename
-#     )
+@login_required(login_url="login")
+@check_collection
+def annotation_add_view(request, mission, file_type, filename):
+    """ Django view function to create an annotation for a record.
+    """
+    if request.method == "POST":
+        collection = models.Collection.objects.get(
+            mission=mission, file_type=file_type
+        )
+        records = models.Record.objects.filter(
+            filename=filename, location__collection=collection
+        )
+
+        form = forms.AddAnnotationForm(
+            [record.location for record in records], request.POST
+        )
+        if form.is_valid():
+            data = form.cleaned_data
+            annotation_records = [
+                models.Record.objects.get(
+                    filename=filename, location=data["location"]
+                )
+            ] if data["location"] else records
+            for record in annotation_records:
+                models.Annotation.objects.create(
+                    record=record, text=data["text"]
+                )
+
+            messages.info(request, "Added annotation.")
+        else:
+            return record_view(request, mission, file_type, filename)
+
+    return redirect("inventory:collection:record",
+        mission=mission, file_type=file_type, filename=filename
+    )
+
+
+@login_required(login_url="login")
+def annotation_delete_view(request, mission, file_type, filename):
+    """ Django view function to delete a specific annotation.
+    """
+    if request.method == "POST":
+        models.Annotation.objects.get(pk=request.POST["annotation"]).delete()
+        messages.info(request, "Removed annotation.")
+
+    return redirect("inventory:collection:record",
+        mission=mission, file_type=file_type, filename=filename
+    )
 
 
 @login_required(login_url="login")

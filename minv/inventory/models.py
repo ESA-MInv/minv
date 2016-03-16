@@ -182,6 +182,8 @@ class Annotation(models.Model):
     text = models.TextField()
     insertion_time = models.DateTimeField(auto_now_add=True)
 
+    def __unicode__(self):
+        return self.text
 
 # setup and teardown stuff
 

@@ -37,7 +37,11 @@
       <td>
         {% for location, record in locations.items %}
           {% if record %}
+            {% if differences %}
+            <span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span>
+            {% else %}
             <span class="glyphicon glyphicon-ok ok" aria-hidden="true"></span>
+            {% endif %}
           {% else %}
             <span class="glyphicon glyphicon-remove missing" aria-hidden="true"></span>
           {% endif %}
@@ -51,14 +55,14 @@
     <tr>
       <th>{% if field_id in differences %}<span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span> {% endif %}{{ field_name }}</th>
       {% if not field_id in differences %}
-        {% with records.0|get:field_id as field_value %}
+        {% with records.0|get_display:field_id as field_value %}
         <td>{% if field_value != None %}{{ field_value }}{% endif %}</td>
         {% endwith %}
       {% else %}
         <td>
           <table class="table table-condensed table-bordered table-nested">
           {% for location, record in locations.items %}
-            {% if record %}<tr><th>{{ location }}</th><td>{{ record | get:field_id }}</td></tr>{% endif %}
+            {% if record %}<tr><th>{{ location }}</th><td>{{ record | get_display:field_id }}</td></tr>{% endif %}
           {% endfor %}
           </table>
         </td>
@@ -72,7 +76,7 @@
         {% if record and record.annotations.exists %}
           <b>{{ location }}</b>
           {% for annotation in record.annotations.all %}
-          <pre>{{ annotation.text }}</pre>
+          <form action="{% url 'inventory:collection:annotation_delete' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">{% csrf_token %}<input type="hidden" name="annotation" value="{{ annotation.pk }}"><pre>{{ annotation.text }} <button type="submit" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button></pre></form>
           {% endfor %}
         {% endif %}
       {% endfor %}
@@ -82,7 +86,8 @@
   </tbody>
 </table>
 
-<form class="form" action="{% url 'inventory:collection:record' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
+<h5>Add Annotation</h5>
+<form class="form" action="{% url 'inventory:collection:annotation_add' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
   {% csrf_token %}
   {% render_form add_annotation_form %}
       <button type="submit" class="btn btn-default">Add Annotation</button>

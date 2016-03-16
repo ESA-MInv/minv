@@ -12,6 +12,12 @@ urlpatterns = [
         url(r'^records/(?P<filename>[\w{}.-]+)$',
             views.record_view, name="record"
         ),
+        url(r'^records/(?P<filename>[\w{}.-]+)/annotations/add/$',
+            views.annotation_add_view, name="annotation_add"
+        ),
+        url(r'^records/(?P<filename>[\w{}.-]+)/annotations/delete/$',
+            views.annotation_delete_view, name="annotation_delete"
+        ),
         url(r'^alignment/$', views.alignment_view, name="alignment"),
         url(r'^export/$', views.export_view, name="export"),
         url(r'^import/$', views.import_view, name="import"),
