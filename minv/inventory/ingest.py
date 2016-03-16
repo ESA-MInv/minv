@@ -17,6 +17,11 @@ def parse_index_time(value):
 
 @transaction.atomic
 def ingest(mission, file_type, url, index_file_name):
+    """ Function to ingest an indexfile into the collection identified by
+    ``mission`` and ``file_type``. The indexfile must be located in the
+    ``pending`` folder of the collections data directory.
+    When ingested correctly, the index
+    """
     # start monitored ingest of file
     with monitor("ingest", mission=mission, file_type=file_type, url=url):
         collection = Collection.objects.get(mission=mission, file_type=file_type)
@@ -44,9 +49,11 @@ def ingest(mission, file_type, url, index_file_name):
             elif isinstance(field, models.CharField) and field.choices:
                 preparations[target] = lambda value: value[0].upper()
 
+        count = 0
         with open(index_file_name) as f:
             reader = csv.DictReader(f, delimiter="\t")
             for row in reader:
+                # TODO: only insert rows that fit the collection
                 record = Record(index_file=index_file, location=location)
                 for target, source in mapping:
                     try:
@@ -64,6 +71,9 @@ def ingest(mission, file_type, url, index_file_name):
 
                 record.full_clean()
                 record.save()
+                count += 1
+
+        return count
 
 
 class IngestionError(Exception):
