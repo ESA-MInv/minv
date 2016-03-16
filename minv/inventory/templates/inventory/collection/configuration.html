@@ -27,10 +27,14 @@
     <div class="input-group col-sm-8">
       {% for form in mapping_formset %}
         <ul>
-          <li>{{ form.index_file_key }}</li>
-          <li>{{ form.search_key }}</li>
+          {% for field in form.visible_fields %}
+          <li>{{ field }}</li>
+          {% for error in field.errors %}
+            <span class="help-block col-xs-offset-2">{{ error }}</span>
+          {% endfor %}
+          {% endfor %}
           {% if formset.can_delete %}
-              <li>{{ form.DELETE }}</li>
+            <li>Delete?{{ form.DELETE }}</li>
           {% endif %}
         </ul>
       {% endfor %}

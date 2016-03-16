@@ -357,9 +357,7 @@ def configuration_view(request, mission, file_type):
         mission=mission, file_type=file_type
     )
 
-    with open(join(settings.BASE_DIR, "minv_prototype/minv.conf")) as f:
-        parser = RawConfigParser()
-        parser.readfp(f)
+    parser = RawConfigParser()
 
     if request.method == "POST":
         configuration_form = forms.CollectionConfigurationForm(request.POST)
@@ -367,7 +365,7 @@ def configuration_view(request, mission, file_type):
         if configuration_form.is_valid() and mapping_formset.is_valid():
             for key, value in configuration_form.cleaned_data.items():
                 parser.set("inventory", key, value)
-            with open(join(settings.BASE_DIR, "minv_prototype/minv.conf"), "w") as f:
+            with open(join(collection.config_dir, "collection.conf"), "w") as f:
                 parser.write(f)
 
             mapping = {}
@@ -376,19 +374,26 @@ def configuration_view(request, mission, file_type):
                     data = form.cleaned_data
                     mapping[data["search_key"]] = data["index_file_key"]
 
-            with open(join(settings.BASE_DIR, "minv_prototype/mapping.json"), "w") as f:
+            with open(join(collection.config_dir, "mapping.json"), "w") as f:
                 json.dump(mapping, f, indent=2)
+
+            messages.info(request,
+                "Saved configuration for collection %s." % collection
+            )
     else:
+        with open(join(collection.config_dir, "collection.conf")) as f:
+            parser.readfp(f)
+
+        with open(join(collection.config_dir, "mapping.json")) as f:
+            mapping = json.load(f)
+
         configuration_form = forms.CollectionConfigurationForm(
             initial=dict(parser.items("inventory"))
         )
-        with open(join(settings.BASE_DIR, "minv_prototype/mapping.json")) as f:
-            data = json.load(f)
-            initial = [
-                {"search_key": key, "index_file_key": value}
-                for key, value in data.items()
-            ]
-        mapping_formset = forms.MetadataMappingFormset(initial=initial)
+        mapping_formset = forms.MetadataMappingFormset(initial=[
+            {"search_key": key, "index_file_key": value}
+            for key, value in mapping.items()
+        ])
     return render(
         request, "inventory/collection/configuration.html", {
             "collections": models.Collection.objects.all(),
