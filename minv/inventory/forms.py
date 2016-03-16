@@ -250,10 +250,17 @@ class AddAnnotationForm(forms.Form):
 
 
 class AlignmentForm(forms.Form):
+    """ Form to gather parameters for the alignment check.
+    """
     def __init__(self, locations, *args, **kwargs):
         """ Dynamically create form fields for eligible model fields.
         """
         super(AlignmentForm, self).__init__(*args, **kwargs)
+        self.fields["format"] = forms.ChoiceField(
+            required=True,
+            choices=[("html", "HTML"), ("csv", "CSV"), ("tsv", "TSV")],
+            widget=forms.Select(attrs=attrs)
+        )
         self.fields["locations"] = forms.MultipleChoiceField(
             required=False,
             choices=[(location.id, str(location)) for location in locations],

@@ -2,13 +2,16 @@ from os.path import join
 from ConfigParser import RawConfigParser
 import json
 from functools import wraps
+import tempfile
+import csv
 
 from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.shortcuts import redirect
 from django.contrib import messages
-from django.conf import settings
 from django.utils.datastructures import SortedDict
+from django.utils.timezone import now
+from django.http import StreamingHttpResponse
 
 from minv.inventory.views import login_required
 from minv.inventory import models
@@ -36,6 +39,8 @@ def check_collection(view):
 
 @login_required(login_url="login")
 def list_view(request):
+    """ Django view function to show a list of registered collections.
+    """
     return render(
         request, "inventory/collection/list.html", {
             "collections": models.Collection.objects.all()
@@ -46,6 +51,8 @@ def list_view(request):
 @login_required(login_url="login")
 @check_collection
 def detail_view(request, mission, file_type):
+    """ Django view function to show the collections dashboard page.
+    """
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -60,6 +67,8 @@ def detail_view(request, mission, file_type):
 @login_required(login_url="login")
 @check_collection
 def harvest_view(request, mission, file_type):
+    """ Django view function to inspect ongoing harvests and trigger new ones.
+    """
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -86,6 +95,8 @@ def harvest_view(request, mission, file_type):
 @login_required(login_url="login")
 @check_collection
 def search_view(request, mission, file_type):
+    """ Django view function to perform the collection search.
+    """
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -117,6 +128,9 @@ def search_view(request, mission, file_type):
 @login_required(login_url="login")
 @check_collection
 def record_view(request, mission, file_type, filename):
+    """ Django view function to inspect a specific record specified by its
+    filename.
+    """
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -138,6 +152,7 @@ def record_view(request, mission, file_type, filename):
             if getattr(record, field) != getattr(reference_record, field):
                 differences.add(field)
 
+    # TODO: make this in annotation_view
     if request.method == "POST":
         add_annotation_form = forms.AddAnnotationForm(
             [record.location for record in records], request.POST
@@ -185,15 +200,19 @@ def record_view(request, mission, file_type, filename):
 @login_required(login_url="login")
 @check_collection
 def alignment_view(request, mission, file_type):
+    """ Django view function to perform the alignment check.
+    """
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
     records = None
     locations = None
+    frmt = "html"
     if request.method == "POST":
         form = forms.AlignmentForm(collection.locations.all(), request.POST)
         pagination_form = forms.PaginationForm(request.POST)
         if form.is_valid() and pagination_form.is_valid():
+            frmt = form.cleaned_data.pop("format")
             locations, qs = queries.alignment(collection, form.cleaned_data)
             page = pagination_form.cleaned_data.pop("page")
             per_page = pagination_form.cleaned_data.pop("records_per_page")
@@ -203,19 +222,45 @@ def alignment_view(request, mission, file_type):
         pagination_form = forms.PaginationForm(
             initial={'page': '1', 'records_per_page': '15'}
         )
-    return render(
-        request, "inventory/collection/alignment.html", {
-            "collections": models.Collection.objects.all(),
-            "collection": collection, "alignment_form": form,
-            "pagination_form": pagination_form, "records": records,
-            "locations": locations
-        }
-    )
+
+    if frmt == "html":
+        return render(
+            request, "inventory/collection/alignment.html", {
+                "collections": models.Collection.objects.all(),
+                "collection": collection, "alignment_form": form,
+                "pagination_form": pagination_form, "records": records,
+                "locations": locations
+            }
+        )
+    elif frmt in ("csv", "tsv"):
+        f = tempfile.SpooledTemporaryFile()
+        writer = csv.writer(f, delimiter="," if frmt == "csv" else "\t")
+        writer.writerow(
+            ["filename"] + [l.url for l in locations] + ["annotations"]
+        )
+        for row in qs:
+            writer.writerow(
+                [row["filename"]] + list(row["incidences"]) +
+                list(row["annotations"])
+            )
+
+        size = f.tell()
+        f.seek(0)
+
+        response = StreamingHttpResponse(f, content_type="text/csv")
+        response["Content-Length"] = str(size)
+        response["Content-Disposition"] = 'inline; filename="alignment-%s.csv"' % (
+            now().replace(microsecond=0, tzinfo=None).isoformat("T")
+        )
+        # TODO: filename
+        return response
 
 
 @login_required(login_url="login")
 @check_collection
 def export_view(request, mission, file_type):
+    """ Django view function to export configuration and data.
+    """
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -246,6 +291,8 @@ def export_view(request, mission, file_type):
 @login_required(login_url="login")
 @check_collection
 def import_view(request, mission, file_type):
+    """ Django view function to import configuration and data.
+    """
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
