@@ -1,18 +1,16 @@
-from django.shortcuts import render
-from django.shortcuts import redirect
-from django.utils.timezone import now
+from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
 from minv.inventory import models
 from minv.inventory import forms
-from minv.monitor import models as monitor_models
-
-# Create your views here.
 
 
 def login_view(request):
+    """ Django view to log in as a user. Logs out when the user was logged in
+    before.
+    """
     logout(request)
     username = password = ''
     login_error = None
@@ -38,6 +36,8 @@ def login_view(request):
 
 
 def logout_view(request):
+    """ Django view to log out the current user.
+    """
     logout(request)
     next_ = request.GET.get("next")
     if next_:
@@ -47,6 +47,8 @@ def logout_view(request):
 
 @login_required(login_url="login")
 def root_view(request):
+    """ The root view of the Master Inventory.
+    """
     return render(
         request, "inventory/root.html", {
             "collections": models.Collection.objects.all()
@@ -56,6 +58,8 @@ def root_view(request):
 
 @login_required(login_url="login")
 def backup_view(request):
+    """ Django view to show and create backups.
+    """
     if request.method == "POST":
         form = forms.BackupForm(request.POST)
         if form.is_valid():
@@ -77,6 +81,8 @@ def backup_view(request):
 
 @login_required(login_url="login")
 def restore_view(request):
+    """ Django view to restore previously created backups
+    """
     if request.method == "POST":
         form = forms.RestoreForm(request.POST)
         if form.is_valid():
@@ -90,64 +96,5 @@ def restore_view(request):
         request, "inventory/restore.html", {
             "collections": models.Collection.objects.all(),
             "form": form
-        }
-    )
-
-
-@login_required(login_url="login")
-def task_list_view(request):
-    qs = monitor_models.Task.objects.all().order_by("start_time")
-    if request.method == "POST":
-        form = forms.TaskFilterForm(request.POST)
-        if form.is_valid() and form.cleaned_data["status"]:
-            qs = qs.filter(status=form.cleaned_data["status"])
-
-    else:
-        form = forms.TaskFilterForm()
-    return render(
-        request, "inventory/task_list.html", {
-            "collections": models.Collection.objects.all(),
-            "tasks": qs, "filter_form": form
-        }
-    )
-
-
-@login_required(login_url="login")
-def task_view(request, task_id):
-    task = monitor_models.Task.objects.get(id=task_id)
-    if request.method == "POST":
-        form = forms.TaskActionForm(request.POST)
-        if form.is_valid():
-            action = form.cleaned_data["action"]
-            if action == "restart":
-                task.start_time = now()
-                task.end_time = None
-                task.status = "running"
-                task.full_clean()
-                task.save()
-                messages.info(request, "Task '%s' restarted." % task.id)
-            elif action == "abort":
-                if task.status != "running":
-                    messages.error(
-                        request, "Task '%s' was not running." % task.id
-                    )
-                else:
-                    task.status = "aborted"
-                    task.end_time = now()
-                    task.full_clean()
-                    task.save()
-                    messages.info(
-                        request, "Task '%s' aborted." % task.id
-                    )
-            elif action == "remove":
-                task.delete()
-                messages.info(request, "Task '%s' removed." % task.id)
-
-    else:
-        form = forms.TaskActionForm()
-    return render(
-        request, "inventory/task.html", {
-            "collections": models.Collection.objects.all(),
-            "task": task, "form": form
         }
     )

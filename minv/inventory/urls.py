@@ -1,5 +1,6 @@
 from django.conf.urls import url, include
 
+from minv.monitor.urls import urlpatterns as monitor_urlpatterns
 from minv.inventory.collection.urls import urlpatterns as collection_urlpatterns
 from minv.inventory import views
 
@@ -13,6 +14,5 @@ urlpatterns = ([
     url(r'^collections/',
         include(collection_urlpatterns, namespace="collection")
     ),
-    url(r'^monitor/$', views.task_list_view, name="task-list"),
-    url(r'^monitor/(?P<task_id>[\w{}.-]+)/$', views.task_view, name="task")
+    url(r'^monitor/', include(monitor_urlpatterns, namespace="monitor"))
 ], "inventory", "inventory")

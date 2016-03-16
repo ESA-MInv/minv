@@ -343,26 +343,3 @@ class MetadataFieldMappingForm(forms.Form):
 MetadataMappingFormset = formset_factory(
     MetadataFieldMappingForm, can_delete=True
 )
-
-
-class TaskFilterForm(forms.Form):
-    status = forms.ChoiceField(
-        required=False,
-        choices=(("", "All"), ("pending", "Pending"), ("running", "Running"),
-                 ("finished", "Finished"), ("failed", "Failed"),
-                 ("aborted", "Aborted")),
-        widget=forms.Select(
-            attrs={"class": "form-control"}
-        )
-    )
-
-
-class TaskActionForm(forms.Form):
-    action = forms.ChoiceField(
-        choices=(
-            ("restart", "Restart"), ("abort", "Abort"), ("remove", "Remove")
-        ),
-        widget=forms.Select(
-            attrs={"class": "form-control"}
-        )
-    )

@@ -9,9 +9,9 @@ def uuid_default():
     return uuid4().hex
 
 
-class Task(models.Model):
+class Job(models.Model):
     id = models.CharField(max_length=32, primary_key=True, default=uuid_default)
-    name = models.CharField(max_length=256)
+    task = models.CharField(max_length=256)
     arguments = models.TextField()
 
     status = models.CharField(max_length=16, choices=(("pending", "Pending"),
@@ -38,3 +38,6 @@ class Task(models.Model):
     @property
     def argument_values(self):
         return json.loads(self.arguments)
+
+    def __str__(self):
+        return self.id if self.id else 'Job object'
