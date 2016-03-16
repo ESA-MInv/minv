@@ -1,5 +1,5 @@
 from os import makedirs, rmdir
-from os.path import join
+from os.path import join, exists
 import json
 
 from django.contrib.gis.db import models
@@ -191,10 +191,17 @@ class Annotation(models.Model):
 @receiver(post_save)
 def on_collection_created(sender, instance, created, **kwargs):
     if sender is Collection and created:
-        makedirs(instance.config_dir)
-        with open(join(instance.config_dir, "mapping.json"), "w") as f:
-            json.dump({}, f)
-        makedirs(instance.data_dir)
+        try:
+            makedirs(instance.config_dir)
+        except OSError:
+            pass
+        if not exists(join(instance.config_dir, "mapping.json")):
+            with open(join(instance.config_dir, "mapping.json"), "w") as f:
+                json.dump({}, f)
+        try:
+            makedirs(instance.data_dir)
+        except OSError:
+            pass
 
 
 @receiver(post_delete)
