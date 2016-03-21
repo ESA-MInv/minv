@@ -1,5 +1,8 @@
 import sys
+from os.path import join
 from ConfigParser import NoOptionError, NoSectionError, RawConfigParser
+
+from django.conf import settings
 
 
 class ConfigurationErrors(Exception):
@@ -109,9 +112,22 @@ class Reader(object):
 
     section = None
 
-    def __init__(self, config):
+    def __init__(self, config=None):
+        # by default, read from the global config dir
+        if config is None:
+            config = join(settings.MINV_CONFIG_DIR, "minv.conf")
+
+        # allow to pass a config parser object
         if isinstance(config, RawConfigParser):
             self._config = config
+
+        # allow to pass a filename
+        elif isinstance(config, basestring):
+            with open(config) as f:
+                self._config = RawConfigParser()
+                self._config.readfp(f)
+
+        # finally try to interpret as file object
         else:
             self._config = RawConfigParser()
             self._config.readfp(config)
