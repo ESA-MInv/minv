@@ -97,7 +97,7 @@ class Location(models.Model):
 
 
 class IndexFile(models.Model):
-    location = models.ForeignKey("Location")
+    location = models.ForeignKey("Location", related_name="index_files")
     filename = models.CharField(max_length=512)
     begin_time = models.DateTimeField()
     end_time = models.DateTimeField()
