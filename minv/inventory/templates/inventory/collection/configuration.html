@@ -1,9 +1,12 @@
 {% extends "inventory/collection/base.html" %}
+{% load staticfiles %}
 {% load inventory_extras %}
 
 {% block head %}
 {{ block.super }}
 {{ search_form.media }}
+<!-- <script src="{% static 'inventory/js/bootstrap3-typeahead.min.js' %}"></script> -->
+<script src="https://rawgit.com/bassjobsen/Bootstrap-3-Typeahead/master/bootstrap3-typeahead.js"></script>
 {% endblock %}
 
 
@@ -22,24 +25,27 @@
 
   {{ mapping_formset.management_form }}
 
-  <div class="form-group {% if field.errors %}has-error{% endif %}">
-    <label class="col-sm-2 control-label">Metadata Mapping:</label>
-    <div class="input-group col-sm-8">
-      {% for form in mapping_formset %}
-        <ul>
-          {% for field in form.visible_fields %}
-          <li>{{ field }}</li>
-          {% for error in field.errors %}
+  <table class="table">
+    <thead>
+    {% for form in mapping_formset.forms %}
+      {% if forloop.first %}
+        {% for field in form %}
+          <th>{{ field.label_tag }}</th>
+        {% endfor %}
+      {% endif %}
+    </thead>
+    <tbody>
+      <tr>
+        {% for field in form %}
+          <td>{{ field }}{% for error in field.errors %}
             <span class="help-block col-xs-offset-2">{{ error }}</span>
-          {% endfor %}
-          {% endfor %}
-          {% if formset.can_delete %}
-            <li>Delete?{{ form.DELETE }}</li>
-          {% endif %}
-        </ul>
-      {% endfor %}
-    </div>
-  </div>
+          {% endfor %}</td>
+          
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
 
   <div class="form-group">
     <div class="col-sm-offset-2 col-sm-10">
