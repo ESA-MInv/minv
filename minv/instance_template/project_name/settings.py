@@ -45,6 +45,7 @@ INSTALLED_APPS = (
     'django.contrib.gis',
     'minv.inventory',
     'minv.monitor',
+    'minv.tasks',
 )
 
 MIDDLEWARE_CLASSES = (

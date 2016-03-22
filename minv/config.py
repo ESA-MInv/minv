@@ -144,6 +144,15 @@ class Reader(object):
             raise ConfigurationErrors(errors)
 
 
+def try_or_none(type_):
+    def wrapper(value):
+        try:
+            return type_(value)
+        except:
+            return None
+    return wrapper
+
+
 class DatabaseReader(Reader):
     section("database")
     host = Option(default="")
@@ -151,3 +160,10 @@ class DatabaseReader(Reader):
     database = Option(default="minv")
     user = Option(default="minv")
     password = Option(required=True)
+
+
+class DaemonReader(Reader):
+    section("daemon")
+    socket_filename = Option(default=None)
+    port = Option(type=try_or_none(int), default=None)
+    num_workers = Option(type=int, default=8)
