@@ -1,5 +1,5 @@
 from os.path import join
-from ConfigParser import RawConfigParser
+from ConfigParser import RawConfigParser, DuplicateSectionError
 import json
 from functools import wraps
 import tempfile
@@ -364,6 +364,10 @@ def configuration_view(request, mission, file_type):
         configuration_form = forms.CollectionConfigurationForm(request.POST)
         mapping_formset = forms.MetadataMappingFormset(request.POST)
         if configuration_form.is_valid() and mapping_formset.is_valid():
+            try:
+                parser.add_section("inventory")
+            except DuplicateSectionError:
+                pass
             for key, value in configuration_form.cleaned_data.items():
                 parser.set("inventory", key, value)
             with open(join(collection.config_dir, "collection.conf"), "w") as f:
@@ -373,28 +377,31 @@ def configuration_view(request, mission, file_type):
             for form in mapping_formset:
                 if form.is_valid():  # and not form.has_changed():
                     data = form.cleaned_data
+                    if data["DELETE"]:
+                        continue
                     mapping[data["search_key"]] = data["index_file_key"]
 
             with open(join(collection.config_dir, "mapping.json"), "w") as f:
+                print mapping
                 json.dump(mapping, f, indent=2)
 
             messages.info(request,
                 "Saved configuration for collection %s." % collection
             )
-    else:
-        with open(join(collection.config_dir, "collection.conf")) as f:
-            parser.readfp(f)
 
-        with open(join(collection.config_dir, "mapping.json")) as f:
-            mapping = json.load(f)
+    with open(join(collection.config_dir, "collection.conf")) as f:
+        parser.readfp(f)
 
-        configuration_form = forms.CollectionConfigurationForm(
-            initial=dict(parser.items("inventory"))
-        )
-        mapping_formset = forms.MetadataMappingFormset(initial=[
-            {"search_key": key, "index_file_key": value}
-            for key, value in mapping.items()
-        ])
+    with open(join(collection.config_dir, "mapping.json")) as f:
+        mapping = json.load(f)
+
+    configuration_form = forms.CollectionConfigurationForm(
+        initial=dict(parser.items("inventory"))
+    )
+    mapping_formset = forms.MetadataMappingFormset(initial=[
+        {"search_key": key, "index_file_key": value}
+        for key, value in mapping.items()
+    ])
     return render(
         request, "inventory/collection/configuration.html", {
             "collections": models.Collection.objects.all(),

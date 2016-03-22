@@ -1,0 +1,5 @@
+{
+  "product_id": "productId", 
+  "filesize": "productSize", 
+  "filename": "productURI"
+}

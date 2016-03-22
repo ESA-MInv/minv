@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 from django.db import models
 from django.utils.translation import ugettext as _
@@ -145,6 +147,22 @@ class BBoxField(forms.MultiValueField):
             return cleaned
 
         return None
+
+
+class TypeAheadWidget(forms.TextInput):
+    def __init__(self, values, *args, **kwargs):
+        super(TypeAheadWidget, self).__init__(*args, **kwargs)
+        self.values = values
+
+    def render(self, name, value, attrs=None):
+        new_attrs = {
+            "data-provide": "typeahead", "data-source": json.dumps(self.values),
+            "data-minLength": "0", "data-addItem": "true", "autocomplete": "off"
+        }
+        new_attrs.update(attrs)
+        return super(TypeAheadWidget, self).render(name, value, new_attrs)
+
+################################################################################
 
 
 class BackupForm(forms.Form):
@@ -320,7 +338,8 @@ class ImportForm(ImportExportBaseForm):
         )
 
 DURATION_REGEX = (
-    "P(?=\w*\d)(?:\d+Y|Y)?(?:\d+M|M)?(?:\d+W|W)?(?:\d+D|D)?(?:T(?:\d+H|H)?(?:\d+M|M)?(?:\d+(?:\.\d{1,2})?S|S)?)?$"
+    "P(?=\w*\d)(?:\d+Y|Y)?(?:\d+M|M)?(?:\d+W|W)?(?:\d+D|D)?(?:T(?:\d+H|H)?"
+    "(?:\d+M|M)?(?:\d+(?:\.\d{1,2})?S|S)?)?$"
 )
 
 
@@ -336,8 +355,33 @@ class CollectionConfigurationForm(forms.Form):
 
 
 class MetadataFieldMappingForm(forms.Form):
-    index_file_key = forms.CharField()
-    search_key = forms.ChoiceField(choices=inventory_models.SEARCH_FIELD_CHOICES)
+    index_file_key = forms.CharField(required=False, widget=TypeAheadWidget([
+        "recordLastUpdate", "beginAcquisition", "endAcquisition",
+        "availabilityTime", "plattformShortName", "plattformSerialIdentifier",
+        "instrumentShortName", "sensorType", "operationalMode", "resolution",
+        "swathIdentifier", "orbitNumber", "orbitDirection", "wrsLongitudeGrid",
+        "wrsLatitudeGrid", "startTimeFromAscendingNode",
+        "completionTimeFromAscendingNode", "illuminationAzimuthAngle",
+        "illuminationZenithAngle", "illuminationElevationAngle",
+        "incidanceAngle", "acrossTrackIncidenceAngle",
+        "alongTrackIncidenceAngle", "footprint", "sceneCentre", "productURI",
+        "productVersion", "productSize", "timeliness", "productId",
+        "parentIdentifier", "acquisitionType", "acquisitionSubType",
+        "productType", "productQualityDegredation", "productQualityStatus",
+        "productQualityDegredationTag", "productQualityReportURL",
+        "productGroupId", "browseImageLocationList",
+        "browseMetadataLocationList", "browseAvailabilityDateList",
+        "thumbnailImageLocationList", "boundingBox", "browseColRowList",
+        "cloudCoverPercentage", "snowCoverPercentage", "multiViewAngles",
+        "centreViewAngles", "polarisationMode", "polarisationChannels",
+        "antennaLookDirection", "minimumIncidenceAngle", "maximumIncidenceAngle",
+        "incidenceAngleVariation", "dopplerFrequency", "nominalTrack",
+        "occulationPoints"
+        ], attrs=attrs))
+    search_key = forms.ChoiceField(
+        choices=inventory_models.SEARCH_FIELD_CHOICES,
+        widget=forms.Select(attrs=attrs)
+    )
 
 
 MetadataMappingFormset = formset_factory(

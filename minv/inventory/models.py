@@ -198,6 +198,11 @@ def on_collection_created(sender, instance, created, **kwargs):
         if not exists(join(instance.config_dir, "mapping.json")):
             with open(join(instance.config_dir, "mapping.json"), "w") as f:
                 json.dump({}, f)
+
+        if not exists(join(instance.config_dir, "collection.conf")):
+            with open(join(instance.config_dir, "collection.conf"), "w") as f:
+                f.write("[inventory]")
+                # TODO: default values for configuration
         try:
             makedirs(instance.data_dir)
         except OSError:
