@@ -155,12 +155,12 @@ class TypeAheadWidget(forms.TextInput):
         self.values = values
 
     def render(self, name, value, attrs=None):
-        new_attrs = {
-            "data-provide": "typeahead", "data-source": json.dumps(self.values),
-            "data-minLength": "0", "data-addItem": "true", "autocomplete": "off"
-        }
+        new_attrs = {"list": "%s_list" % name}
         new_attrs.update(attrs)
-        return super(TypeAheadWidget, self).render(name, value, new_attrs)
+        return mark_safe("%s<datalist id='%s_list'>%s</datalist>" % (
+            super(TypeAheadWidget, self).render(name, value, new_attrs),
+            name, "".join("<option value='%s'>" % value for value in self.values)
+        ))
 
 ################################################################################
 
@@ -377,7 +377,8 @@ class MetadataFieldMappingForm(forms.Form):
         "antennaLookDirection", "minimumIncidenceAngle", "maximumIncidenceAngle",
         "incidenceAngleVariation", "dopplerFrequency", "nominalTrack",
         "occulationPoints"
-        ], attrs=attrs))
+        ], attrs=attrs)
+    )
     search_key = forms.ChoiceField(
         choices=inventory_models.SEARCH_FIELD_CHOICES,
         widget=forms.Select(attrs=attrs)
@@ -385,5 +386,5 @@ class MetadataFieldMappingForm(forms.Form):
 
 
 MetadataMappingFormset = formset_factory(
-    MetadataFieldMappingForm, can_delete=True
+    MetadataFieldMappingForm, can_delete=True, extra=0
 )

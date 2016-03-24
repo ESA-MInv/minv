@@ -4,9 +4,6 @@
 
 {% block head %}
 {{ block.super }}
-{{ search_form.media }}
-<!-- <script src="{% static 'inventory/js/bootstrap3-typeahead.min.js' %}"></script> -->
-<script src="https://rawgit.com/bassjobsen/Bootstrap-3-Typeahead/master/bootstrap3-typeahead.js"></script>
 {% endblock %}
 
 
@@ -40,12 +37,31 @@
           <td>{{ field }}{% for error in field.errors %}
             <span class="help-block col-xs-offset-2">{{ error }}</span>
           {% endfor %}</td>
-          
         {% endfor %}
       </tr>
     {% endfor %}
+    <tr id="insert-row-before">
+      <td><a href="#" id="add-another-mapping">Add another mapping</a></td>
+    </tr>
     </tbody>
   </table>
+
+  <script type="text/template" id="row-template">
+  <tr>
+  {% for field in mapping_formset.empty_form %}
+    <td>{{ field }}</td>
+  {% endfor %}
+  </tr>
+  </script>
+
+  <script>
+  $(function() {
+    $("#add-another-mapping").click(function() {
+      $($("#row-template").html().replace(/__prefix__/g, $("tbody tr").length - 1)).insertBefore("#insert-row-before");
+      $("#id_form-TOTAL_FORMS").val(parseInt($("#id_form-TOTAL_FORMS").val()) + 1);
+    });
+  });
+  </script>
 
   <div class="form-group">
     <div class="col-sm-offset-2 col-sm-10">

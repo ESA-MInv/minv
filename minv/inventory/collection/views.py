@@ -375,14 +375,13 @@ def configuration_view(request, mission, file_type):
 
             mapping = {}
             for form in mapping_formset:
-                if form.is_valid():  # and not form.has_changed():
+                if form.is_valid():
                     data = form.cleaned_data
-                    if data["DELETE"]:
+                    if data["DELETE"] or not data["index_file_key"]:
                         continue
                     mapping[data["search_key"]] = data["index_file_key"]
 
             with open(join(collection.config_dir, "mapping.json"), "w") as f:
-                print mapping
                 json.dump(mapping, f, indent=2)
 
             messages.info(request,
