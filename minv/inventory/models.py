@@ -1,4 +1,5 @@
 from os import makedirs, rmdir
+from shutil import rmtree
 from os.path import join, exists
 import json
 
@@ -119,6 +120,10 @@ class Record(models.Model):
 
     # query fields
     # TODO: region = # TODO
+
+    centre = models.PointField(null=True, blank=True, db_index=True)
+    footprint = models.MultiPolygonField(null=True, blank=True, db_index=True)
+
     orbit_number = models.IntegerField(null=True, blank=True, db_index=True)
     track = models.IntegerField(null=True, blank=True, db_index=True)
     frame = models.IntegerField(null=True, blank=True, db_index=True)
@@ -212,7 +217,7 @@ def on_collection_created(sender, instance, created, **kwargs):
 @receiver(post_delete)
 def on_collection_deleted(sender, instance, **kwargs):
     if sender is Collection:
-        rmdir(instance.data_dir)
+        rmtree(instance.data_dir)
         # if that was the only collection with that exact mission, remove the
         # mission dir aswell
         if not Collection.objects.filter(mission=instance.mission).exists():
