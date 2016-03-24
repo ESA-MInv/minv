@@ -47,6 +47,7 @@ INSTALLED_APPS = (
     'django_extensions',
     'minv.inventory',
     'minv.monitor',
+    'minv.tasks',
 )
 
 MIDDLEWARE_CLASSES = (
