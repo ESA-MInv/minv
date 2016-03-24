@@ -1,17 +1,30 @@
 import csv
 from os.path import basename
 from datetime import datetime
+from urlparse import urlparse
 
 from django.db import transaction
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import utc
-from django.contrib.gis.db.models import DateTimeField, CharField, PolygonField
+from django.contrib.gis.db.models import (
+    DateTimeField, CharField, MultiPolygonField, PointField
+)
+from django.contrib.gis.geos import MultiPolygon, Point
 
 from minv.inventory import models
+from minv.geom_utils import fix_footprint
 
 
 def parse_index_time(value):
     return datetime.strptime(value, "%Y%m%d-%H%M%S").replace(tzinfo=utc)
+
+
+def parse_footprint(value):
+    return MultiPolygon(fix_footprint(value)[0])
+
+
+def parse_point(value):
+    return Point(float(v) for v in value.split(" "))
 
 
 @transaction.atomic
@@ -39,7 +52,9 @@ def ingest(mission, file_type, url, index_file_name):
 
     # prepare value "preparators"
     meta = models.Record._meta
-    preparations = {}
+    preparations = {
+        "filename": lambda v: basename(urlparse(v).path)
+    }
 
     mapping = collection.get_metadata_field_mapping().items()
     for target, _ in mapping:
@@ -48,8 +63,10 @@ def ingest(mission, file_type, url, index_file_name):
             preparations[target] = parse_datetime  # TODO: necessary?
         elif isinstance(field, CharField) and field.choices:
             preparations[target] = lambda value: value[0].upper()
-        elif isinstance(field, PolygonField):
-            pass # TODO: paprse polygon
+        elif isinstance(field, MultiPolygonField):
+            preparations[target] = parse_footprint
+        elif isinstance(field, PointField):
+            preparations[target] = parse_point
 
     count = 0
     with open(index_file_name) as f:
