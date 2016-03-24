@@ -26,6 +26,9 @@ class Command(BaseCommand):
         make_option("-n", "--nga",
             action="append", dest="nga_list", default=None
         ),
+        make_option("-p", "--purge",
+            action="store_true", default=False
+        )
     )
 
     args = (
@@ -67,13 +70,13 @@ class Command(BaseCommand):
 
             for url in nga_list:
                 location = models.Location.objects.create(
-                    collection=collection, location_type="ngA", url=url
+                    collection=collection, location_type="nga", url=url
                 )
                 print("Adding location '%s' to collection." % location)
 
             for url in oads_list:
                 location = models.Location.objects.create(
-                    collection=collection, location_type="OADS", url=url
+                    collection=collection, location_type="oads", url=url
                 )
                 print("Adding location '%s' to collection." % location)
 
@@ -91,6 +94,9 @@ class Command(BaseCommand):
 
             print("Deleting collection '%s'" % collection)
             collection.delete()
+            if options["purge"]:
+                # TODO: delete configuration folder as-well
+                pass
 
         elif mode == "list":
             for collection in models.Collection.objects.all():
