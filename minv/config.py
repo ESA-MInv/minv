@@ -41,7 +41,7 @@ class Option(property):
     def __init__(self, key=None, type=None, separator=None, required=False,
                  default=None, section=None, doc=None):
 
-        super(Option, self).__init__(self.fget)
+        super(Option, self).__init__(self.fget, self.fset, self.fdel)
 
         self.key = key  # needs to be set by the reader metaclass
         self.type = type
@@ -71,15 +71,58 @@ class Option(property):
         else:
             return raw_value
 
-    def check(self, reader):
-        # TODO: perform checking of config
-        #  - required option?
-        #  - can parse type?
-        errors
+    def fset(self, reader, value):
+        if self.separator:
+            value = self.separator.join(value)
+        elif self.type is bool:
+            value = str(value).lower()
+
+        if not reader._config.has_section(self.section):
+            reader._config.add_section(self.section)
+
+        if value is not None:
+            reader._config.set(self.section, self.key, value)
+        else:
+            reader._config.remove_option(self.section, self.key)
+
+    def fdel(self, reader):
+        if reader._config.has_section(self.section):
+            reader._config.remove_option(self.section, self.key)
 
     def __repr__(self):
         return "<%s.%s '%s.%s'>" % (
             self.__module__, self.__class__.__name__, self.section, self.key
+        )
+
+
+class SectionOption(property):
+    """
+    """
+
+    def __init__(self, section=None, doc=None):
+        super(SectionOption, self).__init__(self.fget, self.fset, self.fdel)
+        self.section = section  # needs to be set by the reader metaclass
+
+    def fget(self, reader):
+        try:
+            return dict(reader._config.items(self.section))
+        except NoSectionError:
+            return {}
+
+    def fset(self, reader, values):
+        reader._config.remove_section(self.section)
+
+        if values:
+            reader._config.add_section(self.section)
+            for key, value in values.items():
+                reader._config.set(self.section, key, value)
+
+    def fdel(self, reader):
+        reader._config.remove_section(self.section)
+
+    def __repr__(self):
+        return "<%s.%s '%s'>" % (
+            self.__module__, self.__class__.__name__, self.section
         )
 
 
@@ -99,8 +142,12 @@ class ReaderMetaclass(type):
                 if value.key is None:
                     value.key = key
                     value.__doc__ = "%s.%s" % (value.section, value.key)
+            elif isinstance(value, SectionOption):
+                if value.section is None:
+                    value.section = key
+                    value.__doc__ = "%s" % (value.section)
 
-                dct["_options"].append(value)
+            dct["_options"].append(value)
 
         super(ReaderMetaclass, cls).__init__(name, bases, dct)
 
@@ -112,25 +159,14 @@ class Reader(object):
 
     section = None
 
-    def __init__(self, config=None):
+    def __init__(self, config_path=None):
         # by default, read from the global config dir
-        if config is None:
-            config = join(settings.MINV_CONFIG_DIR, "minv.conf")
+        if config_path is None:
+            config_path = join(settings.MINV_CONFIG_DIR, "minv.conf")
 
-        # allow to pass a config parser object
-        if isinstance(config, RawConfigParser):
-            self._config = config
-
-        # allow to pass a filename
-        elif isinstance(config, basestring):
-            with open(config) as f:
-                self._config = RawConfigParser()
-                self._config.readfp(f)
-
-        # finally try to interpret as file object
-        else:
-            self._config = RawConfigParser()
-            self._config.readfp(config)
+        self._config_path = config_path
+        self._config = None
+        self.read()
 
     def check_config(self):
         errors = []
@@ -142,6 +178,16 @@ class Reader(object):
 
         if errors:
             raise ConfigurationErrors(errors)
+
+    def write(self, config_path=None):
+        self._config.write(open(config_path or self._config_path, "w"))
+
+    def read(self, reset=True):
+        if reset or not self._config:
+            self._config = RawConfigParser()
+
+        with open(self._config_path) as f:
+            self._config.readfp(f)
 
 
 def try_or_none(type_):

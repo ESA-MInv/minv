@@ -205,6 +205,37 @@ class PaginationForm(forms.Form):
     )
 
 
+def create_formfield_for_model_field(model_field):
+    print model_field
+    if isinstance(model_field, models.IntegerField):
+        return RangeField(
+            forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
+            required=False
+        )
+    elif isinstance(model_field, models.FloatField):
+        return RangeField(
+            forms.FloatField,
+            widget=forms.NumberInput(attrs=float_attrs),
+            required=False
+        )
+    elif isinstance(model_field, models.DateTimeField):
+        return RangeField(forms.DateTimeField,
+            required=False, widget=forms.TextInput(attrs=date_attrs)
+        )
+    elif isinstance(model_field, models.CharField):
+        if model_field.choices:
+            return forms.ChoiceField(
+                required=False, choices=(("", "---"),) + model_field.choices,
+                widget=forms.Select(attrs=attrs)
+            )
+        else:
+            return forms.CharField(
+                required=False, widget=ClearableTextInput(attrs=attrs)
+            )
+
+    raise ValueError("No such field %s" % model_field.name)
+
+
 class RecordSearchForm(forms.Form):
     def __init__(self, locations, *args, **kwargs):
         """ Dynamically create form fields for eligible model fields.
@@ -220,36 +251,13 @@ class RecordSearchForm(forms.Form):
             widget=forms.NumberInput(attrs=float_attrs)
         )
         for field in inventory_models.Record._meta.fields:
-            if isinstance(field, models.IntegerField):
-                self.fields[field.name] = RangeField(
-                    forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
-                    required=False
-                )
-            elif isinstance(field, models.FloatField):
-                self.fields[field.name] = RangeField(
-                    forms.FloatField,
-                    widget=forms.NumberInput(attrs=float_attrs),
-                    required=False
-                )
-            elif isinstance(field, models.DateTimeField):
-                name = field.name
+            name = field.name
+            if isinstance(field, models.DateTimeField):
                 if name == "begin_time":
                     continue
                 elif name == "end_time":
                     name = "acquisition_date"
-                self.fields[name] = RangeField(forms.DateTimeField,
-                    required=False, widget=forms.TextInput(attrs=date_attrs)
-                )
-            elif isinstance(field, models.CharField):
-                if field.choices:
-                    self.fields[field.name] = forms.ChoiceField(
-                        required=False, choices=(("", "---"),) + field.choices,
-                        widget=forms.Select(attrs=attrs)
-                    )
-                else:
-                    self.fields[field.name] = forms.CharField(
-                        required=False, widget=ClearableTextInput(attrs=attrs)
-                    )
+            self.fields[name] = create_formfield_for_model_field(field)
 
 
 class AddAnnotationForm(forms.Form):
@@ -270,7 +278,7 @@ class AddAnnotationForm(forms.Form):
 class AlignmentForm(forms.Form):
     """ Form to gather parameters for the alignment check.
     """
-    def __init__(self, locations, *args, **kwargs):
+    def __init__(self, locations, available_alignment_fields, *args, **kwargs):
         """ Dynamically create form fields for eligible model fields.
         """
         super(AlignmentForm, self).__init__(*args, **kwargs)
@@ -287,33 +295,14 @@ class AlignmentForm(forms.Form):
         self.fields["instrument"] = forms.CharField(
             required=False, widget=ClearableTextInput(attrs=attrs)
         )
-        self.fields["satellite_identifier"] = forms.CharField(
-            required=False, widget=ClearableTextInput(attrs=attrs)
-        )
-        self.fields["file_class"] = forms.CharField(
-            required=False, widget=ClearableTextInput(attrs=attrs)
-        )
-        self.fields["time_span"] = RangeField(forms.DateTimeField,
-            required=False, widget=forms.TextInput(attrs=date_attrs)
-        )
-        self.fields["orbit_number"] = RangeField(
-            forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
-            required=False
-        )
-        self.fields["track"] = RangeField(
-            forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
-            required=False
-        )
-        self.fields["frame"] = RangeField(
-            forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
-            required=False
-        )
-        self.fields["creation_date"] = RangeField(forms.DateTimeField,
-            required=False, widget=forms.TextInput(attrs=date_attrs)
-        )
-        self.fields["baseline"] = forms.CharField(
-            required=False, widget=ClearableTextInput(attrs=attrs)
-        )
+
+        available_alignment_fields
+
+        for name, __ in inventory_models.ALIGNMENT_FIELD_CHOICES:
+            if name in available_alignment_fields:
+                self.fields[name] = create_formfield_for_model_field(
+                    inventory_models.Record._meta.get_field_by_name(name)[0]
+                )
 
 
 class ImportExportBaseForm(forms.Form):
@@ -342,6 +331,9 @@ DURATION_REGEX = (
     "(?:\d+M|M)?(?:\d+(?:\.\d{1,2})?S|S)?)?$"
 )
 
+list_inline = dict(attrs)
+list_inline["class"] = "list-inline"
+
 
 class CollectionConfigurationForm(forms.Form):
     harvest_interval = forms.CharField(required=False,
@@ -351,6 +343,10 @@ class CollectionConfigurationForm(forms.Form):
     export_interval = forms.CharField(required=False,
         widget=ClearableTextInput(attrs=attrs),
         validators=[RegexValidator(DURATION_REGEX)]
+    )
+    available_alignment_fields = forms.MultipleChoiceField(
+        required=True, choices=inventory_models.ALIGNMENT_FIELD_CHOICES,
+        widget=forms.CheckboxSelectMultiple(attrs=list_inline)
     )
 
 

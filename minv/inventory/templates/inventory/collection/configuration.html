@@ -18,8 +18,11 @@
 
 <form action="{% url 'inventory:collection:configuration' mission=collection.mission file_type=collection.file_type %}" method="post" class="form-horizontal">
   {% csrf_token %}
+
+  <h2>Configuration</h2>
   {% render_form configuration_form %}
 
+  <h2>Harvesting Metadata mapping</h2>
   {{ mapping_formset.management_form }}
 
   <table class="table">
@@ -47,11 +50,11 @@
   </table>
 
   <script type="text/template" id="row-template">
-  <tr>
-  {% for field in mapping_formset.empty_form %}
-    <td>{{ field }}</td>
-  {% endfor %}
-  </tr>
+    <tr>
+    {% for field in mapping_formset.empty_form %}
+      <td>{{ field }}</td>
+    {% endfor %}
+    </tr>
   </script>
 
   <script>

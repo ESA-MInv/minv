@@ -73,7 +73,7 @@ WSGI_APPLICATION = 'minv_instance.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
-reader = DatabaseReader(open(os.path.join(MINV_CONFIG_DIR, 'minv.conf')))
+reader = DatabaseReader(os.path.join(MINV_CONFIG_DIR, 'minv.conf'))
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',

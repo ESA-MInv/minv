@@ -8,10 +8,13 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.conf import settings
 
+from minv.inventory.collection import config
+
 
 SEARCH_FIELD_CHOICES = (
     ("filename", "File Name"),
     ("filesize", "File Size"),
+    ("checksum", "Checksum"),
     ("orbit_number", "Orbit Number"),
     ("track", "Track"),
     ("frame", "Frame"),
@@ -32,9 +35,22 @@ SEARCH_FIELD_CHOICES = (
     ("processor_version", "Processor Version"),
     ("acquisition_station", "Acquisition Station"),
     ("orbit_direction", "Orbit Direction"),
+    ("file_type", "File Type/Originator"),
     ("product_quality_degradatation", "Product Quality Degradation"),
     ("product_quality_status", "Product Quality Status"),
-    ("product_quality_degradatation_tag", "Product Quality Degredation Tag")
+    ("product_quality_degradatation_tag", "Product Quality Degredation Tag"),
+    ("footprint", "Footprint"),
+    ("scene_centre", "Scene Centre"),
+)
+
+ALIGNMENT_FIELD_CHOICES = (
+    ("orbit_number", "Orbit Number"),
+    ("track", "Track"),
+    ("frame", "Frame"),
+    ("platform_serial_identifier", "Platform Serial Identifier"),
+    ("instrument", "Instrument"),
+    ("creation_date", "Creation Time"),
+    ("baseline", "Baseline/Version"),
 )
 
 
@@ -58,6 +74,12 @@ class Collection(models.Model):
         return join(
             settings.MINV_CONFIG_DIR, "collections",
             self.mission, self.file_type
+        )
+
+    @property
+    def configuration(self):
+        return config.CollectionConfigurationReader(
+            join(self.config_dir, "collection.conf")
         )
 
     @property
@@ -109,69 +131,51 @@ class IndexFile(models.Model):
         return "%s (%s)" % (self.filename, self.location)
 
 
+optional = dict(null=True, blank=True, db_index=True)
+
+
 class Record(models.Model):
     location = models.ForeignKey("Location")
     index_file = models.ForeignKey("IndexFile")
     filename = models.CharField(max_length=256, db_index=True)
     filesize = models.IntegerField()
-    checksum = models.CharField(max_length=256, null=True, blank=True)
+    checksum = models.CharField(max_length=256)
 
     # TODO: "row" or "offset" in file
 
-    # query fields
-    # TODO: region = # TODO
-
-    centre = models.PointField(null=True, blank=True, db_index=True)
-    footprint = models.MultiPolygonField(null=True, blank=True, db_index=True)
-
-    orbit_number = models.IntegerField(null=True, blank=True, db_index=True)
-    track = models.IntegerField(null=True, blank=True, db_index=True)
-    frame = models.IntegerField(null=True, blank=True, db_index=True)
-    platform_serial_identifier = models.CharField(max_length=256, null=True,
-                                                  blank=True, db_index=True)
-    mission_phase = models.CharField(max_length=256, null=True, blank=True,
-                                     db_index=True)
-    operational_mode = models.CharField(max_length=64, null=True, blank=True,
-                                        db_index=True)
-    swath = models.IntegerField(null=True, blank=True, db_index=True)
-    instrument = models.CharField(max_length=256, null=True, blank=True,
-                                  db_index=True)
-    product_id = models.CharField(max_length=1024, null=True, blank=True,
-                                  db_index=True)
-
-    # TODO: file class / originator
-    begin_time = models.DateTimeField(null=True, blank=True, db_index=True)
-    end_time = models.DateTimeField(null=True, blank=True, db_index=True)
-    insertion_time = models.DateTimeField(null=True, blank=True, db_index=True)
-    creation_date = models.DateTimeField(null=True, blank=True, db_index=True)
-    baseline = models.CharField(max_length=256, null=True, blank=True,
-                                db_index=True)
-
-    scene_centre = models.PointField(null=True, blank=True, db_index=True)
-    footprint = models.MultiPolygonField(null=True, blank=True, db_index=True)
-
-    processing_centre = models.CharField(max_length=256, null=True, blank=True,
-                                         db_index=True)
-    processing_date = models.DateTimeField(null=True, blank=True, db_index=True)
-    processing_mode = models.CharField(max_length=64, null=True, blank=True,
-                                       db_index=True)
-    processor_version = models.CharField(max_length=32, null=True, blank=True,
-                                         db_index=True)
-    acquisition_station = models.CharField(max_length=256, null=True, blank=True,
-                                           db_index=True)
-    orbit_direction = models.CharField(max_length=1, null=True, blank=True,
-                                       db_index=True,
-                                       choices=(("A", "ASCENDING"),
-                                                ("D", "DESCENDING")))
-    product_quality_degradatation = models.FloatField(null=True, blank=True,
-                                                      db_index=True)
-    product_quality_status = models.CharField(max_length=1, null=True,
-                                              blank=True, db_index=True,
-                                              choices=(("N", "NOMINAL"),
-                                                       ("D", "DEGRADED")))
-    product_quality_degradatation_tag = models.CharField(max_length=4096,
-                                                         null=True, blank=True,
-                                                         db_index=True)
+    orbit_number = models.IntegerField(**optional)
+    track = models.IntegerField(**optional)
+    frame = models.IntegerField(**optional)
+    platform_serial_identifier = models.CharField(max_length=256, **optional)
+    mission_phase = models.CharField(max_length=256, **optional)
+    operational_mode = models.CharField(max_length=64, **optional)
+    swath = models.IntegerField(**optional)
+    instrument = models.CharField(max_length=256, **optional)
+    product_id = models.CharField(max_length=1024, **optional)
+    begin_time = models.DateTimeField(**optional)
+    end_time = models.DateTimeField(**optional)
+    insertion_time = models.DateTimeField(**optional)
+    creation_date = models.DateTimeField(**optional)
+    baseline = models.CharField(max_length=256, **optional)
+    scene_centre = models.PointField(**optional)
+    footprint = models.MultiPolygonField(**optional)
+    processing_centre = models.CharField(max_length=256, **optional)
+    processing_date = models.DateTimeField(**optional)
+    processing_mode = models.CharField(max_length=64, **optional)
+    processor_version = models.CharField(max_length=32, **optional)
+    acquisition_station = models.CharField(max_length=256, **optional)
+    orbit_direction = models.CharField(
+        max_length=1, choices=(("A", "ASCENDING"), ("D", "DESCENDING")),
+        **optional
+    )
+    file_type = models.CharField(max_length=16, **optional)
+    product_quality_degradatation = models.FloatField(**optional)
+    product_quality_status = models.CharField(
+        max_length=1, choices=(("N", "NOMINAL"), ("D", "DEGRADED")), **optional
+    )
+    product_quality_degradatation_tag = models.CharField(
+        max_length=4096, **optional
+    )
 
     objects = models.GeoManager()
 
@@ -200,9 +204,6 @@ def on_collection_created(sender, instance, created, **kwargs):
             makedirs(instance.config_dir)
         except OSError:
             pass
-        if not exists(join(instance.config_dir, "mapping.json")):
-            with open(join(instance.config_dir, "mapping.json"), "w") as f:
-                json.dump({}, f)
 
         if not exists(join(instance.config_dir, "collection.conf")):
             with open(join(instance.config_dir, "collection.conf"), "w") as f:

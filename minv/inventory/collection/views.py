@@ -247,11 +247,17 @@ def alignment_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
+
+    config = collection.configuration
+
     records = None
     locations = None
     frmt = "html"
     if request.method == "POST":
-        form = forms.AlignmentForm(collection.locations.all(), request.POST)
+        form = forms.AlignmentForm(
+            collection.locations.all(), config.available_alignment_fields,
+            request.POST
+        )
         pagination_form = forms.PaginationForm(request.POST)
         if form.is_valid() and pagination_form.is_valid():
             frmt = form.cleaned_data.pop("format")
@@ -260,7 +266,9 @@ def alignment_view(request, mission, file_type):
             per_page = pagination_form.cleaned_data.pop("records_per_page")
             records = Paginator(qs, per_page).page(page)
     else:
-        form = forms.AlignmentForm(collection.locations.all())
+        form = forms.AlignmentForm(
+            collection.locations.all(), config.available_alignment_fields
+        )
         pagination_form = forms.PaginationForm(
             initial={'page': '1', 'records_per_page': '15'}
         )
@@ -358,20 +366,16 @@ def configuration_view(request, mission, file_type):
         mission=mission, file_type=file_type
     )
 
-    parser = RawConfigParser()
+    config = collection.configuration
 
     if request.method == "POST":
         configuration_form = forms.CollectionConfigurationForm(request.POST)
         mapping_formset = forms.MetadataMappingFormset(request.POST)
+
         if configuration_form.is_valid() and mapping_formset.is_valid():
-            try:
-                parser.add_section("inventory")
-            except DuplicateSectionError:
-                pass
             for key, value in configuration_form.cleaned_data.items():
-                parser.set("inventory", key, value)
-            with open(join(collection.config_dir, "collection.conf"), "w") as f:
-                parser.write(f)
+                print key, value
+                setattr(config, key, value)
 
             mapping = {}
             for form in mapping_formset:
@@ -381,26 +385,42 @@ def configuration_view(request, mission, file_type):
                         continue
                     mapping[data["search_key"]] = data["index_file_key"]
 
-            with open(join(collection.config_dir, "mapping.json"), "w") as f:
-                json.dump(mapping, f, indent=2)
-
+            config.metadata_mapping = mapping
+            config.write()
             messages.info(request,
                 "Saved configuration for collection %s." % collection
             )
 
-    with open(join(collection.config_dir, "collection.conf")) as f:
-        parser.readfp(f)
+            # re-read the forms here with the updated configuration
+            config.read(reset=True)
 
-    with open(join(collection.config_dir, "mapping.json")) as f:
-        mapping = json.load(f)
+            configuration_form = forms.CollectionConfigurationForm(
+                initial={
+                    "export_interval": config.export_interval,
+                    "harvest_interval": config.harvest_interval,
+                    "available_alignment_fields":
+                        config.available_alignment_fields
+                }
+            )
+            mapping_formset = forms.MetadataMappingFormset(initial=[
+                {"search_key": key, "index_file_key": v}
+                for key, v in config.metadata_mapping.items()
+            ])
 
-    configuration_form = forms.CollectionConfigurationForm(
-        initial=dict(parser.items("inventory"))
-    )
-    mapping_formset = forms.MetadataMappingFormset(initial=[
-        {"search_key": key, "index_file_key": value}
-        for key, value in mapping.items()
-    ])
+    else:
+        configuration_form = forms.CollectionConfigurationForm(
+            initial={
+                "export_interval": config.export_interval,
+                "harvest_interval": config.harvest_interval,
+                "available_alignment_fields":
+                    config.available_alignment_fields
+            }
+        )
+        mapping_formset = forms.MetadataMappingFormset(initial=[
+            {"search_key": key, "index_file_key": v}
+            for key, v in config.metadata_mapping.items()
+        ])
+
     return render(
         request, "inventory/collection/configuration.html", {
             "collections": models.Collection.objects.all(),
