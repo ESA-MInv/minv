@@ -62,8 +62,9 @@ class Collection(models.Model):
         return "%s/%s" % (self.mission, self.file_type)
 
     def get_metadata_field_mapping(self):
-        with open(join(self.config_dir, "mapping.json")) as f:
-            return json.load(f)
+        return self.configuration.metadata_mapping
+        # with open(join(self.config_dir, "mapping.json")) as f:
+        #     return json.load(f)
         # return dict(
         #     (mapping.indexfile_key, mapping.search_key)
         #     for mapping in self.metadata_field_mappings.all()
