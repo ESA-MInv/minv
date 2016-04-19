@@ -5,9 +5,11 @@ from contextlib import closing
 import logging
 import xml.etree.ElementTree as ET
 import os
-from os.path import join, isfile
+from os.path import join, isfile, splitext, basename
 import errno
 import shutil
+import zipfile
+import re
 
 from django.utils.datastructures import SortedDict
 from django.utils.text import slugify
@@ -15,7 +17,7 @@ from django.utils.text import slugify
 from minv.inventory import models
 from minv.inventory.ingest import ingest
 from minv.utils import Timer
-
+from minv.tasks.registry import task
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +26,7 @@ class HarvestingError(Exception):
     pass
 
 
+@task
 def harvest(mission, file_type, url):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
@@ -76,6 +79,9 @@ def harvest(mission, file_type, url):
 
     for index_file_name in itertools.chain(updated, inserted):
         try:
+            index_file_name = extract_zipped_index_file(
+                join(pending_dir, index_file_name)
+            )
             ingest(mission, file_type, url, join(pending_dir, index_file_name))
         except:
             os.rename(
@@ -124,9 +130,44 @@ def select_index_files(available_index_files, ingested_index_files):
         (old, new) for old, new in common if old[32:47] < new[32:47]
     ]
 
-
-    print index_files_inserted, index_files_updated, index_files_deleted
     return index_files_inserted, index_files_updated, index_files_deleted
+
+
+CHUNK_SIZE = 64*1024  # 64kB block size
+
+
+def extract_zipped_index_file(src_file):
+    """ Extract a index file from a zip-archive if zipped or pass the index
+    file unchanged if not zipped.
+    """
+    dst_file, ext = splitext(src_file)
+    if ext == ".zip":
+        logger.debug("Extracting zip-file %s ...", src_file)
+        # NOTE: Avoid possible filesystem-to-filesystem copy.
+        #       ans store the file directly in the destination folder.
+        tmp_file = dst_file + ".tmp"
+        timer = Timer()
+        try:
+            with closing(zipfile.ZipFile(src_file)) as archive:
+                fin = archive.open(basename(dst_file))
+                with open(tmp_file, "wb") as fout:
+                    shutil.copyfileobj(fin, fout, CHUNK_SIZE)
+                    size = fout.tell()
+            os.rename(tmp_file, dst_file)
+        except Exception as exc:
+            logger.error("Extraction of %s failed: %s", src_file, exc)
+            raise
+        else:
+            os.remove(src_file)
+        finally:
+            if isfile(tmp_file):
+                os.remove(tmp_file)
+        logger.info(
+            "'%s' -> '%s' %dB %.3fs", src_file, dst_file, size, timer.stop()
+        )
+        return dst_file
+    else:
+        return src_file
 
 
 class BaseHarvester(object):
@@ -140,6 +181,11 @@ class BaseHarvester(object):
     def retrieve(self, url, file_name, target_dir):
         pass
 
+# index file naming convention
+RE_INDEX_PATTERN = r"\d{8,8}-\d{6,6}_\d{8,8}-\d{6,6}_\d{8,8}-\d{6,6}.index"
+RE_INDEX = re.compile("^%s$" % RE_INDEX_PATTERN)
+RE_INDEX_FILE = re.compile(r"^%s(?:\.zip)?$" % RE_INDEX_PATTERN)
+
 
 class OADSHarvester(BaseHarvester):
     def scan(self):
@@ -147,7 +193,11 @@ class OADSHarvester(BaseHarvester):
             url = self.location.url
             with closing(urllib2.urlopen(url, timeout=self.timeout)) as handle:
                 logger.debug("Scanning: Got response from: %s", handle.geturl())
-                index_files = extract_index_hrefs(handle, handle.geturl())
+                index_files = [
+                    idx_file
+                    for idx_file in extract_index_hrefs(handle, handle.geturl())
+                    if RE_INDEX_FILE.match(idx_file[0])
+                ]
         except Exception as exc:
             logger.error("Error parsing %s: %s", url, exc)
             raise

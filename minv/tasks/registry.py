@@ -1,3 +1,5 @@
+from django.utils.importlib import import_module
+
 from minv.tasks.api import monitor
 from minv.tasks import models
 
@@ -31,8 +33,7 @@ class Registry(object):
 
     def initialize(self, module_list=None):
         for module_path in module_list:
-            # TODO: import module
-            pass
+            import_module(module_path)
 
 registry = Registry()
 task = registry.register
