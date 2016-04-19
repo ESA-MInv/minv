@@ -9,11 +9,25 @@ def uuid_default():
     return uuid4().hex
 
 
-class Job(models.Model):
-    id = models.CharField(max_length=32, primary_key=True, default=uuid_default)
+class TaskBase(models.Model):
+    """ Base class for scheduled or running tasks
+    """
     task = models.CharField(max_length=256)
     arguments = models.TextField()
 
+    @property
+    def argument_values(self):
+        return json.loads(self.arguments)
+
+    class Meta:
+        abstract = True
+
+
+class Job(TaskBase):
+    """ Model class for a pending, running or somehow finished job.
+    """
+
+    id = models.CharField(max_length=32, primary_key=True, default=uuid_default)
     status = models.CharField(max_length=16, choices=(("pending", "Pending"),
                                                       ("running", "Running"),
                                                       ("finished", "Finished"),
@@ -35,9 +49,11 @@ class Job(models.Model):
             return now() - self.start_time
         return None
 
-    @property
-    def argument_values(self):
-        return json.loads(self.arguments)
-
     def __str__(self):
         return self.id if self.id else 'Job object'
+
+
+class ScheduledTask(TaskBase):
+    """ Model class for a scheduled job.
+    """
+    when = models.DateTimeField()
