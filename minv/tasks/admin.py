@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.timezone import now
 
-from minv.monitor import models
+from minv.tasks import models
 
 
 def duration(task):

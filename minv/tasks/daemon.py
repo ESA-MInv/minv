@@ -79,6 +79,14 @@ class Daemon(object):
     def on_scheduled(self):
         pass
 
+    def load_schedule(self):
+        """
+        """
+        self.scheduler.reset()
+
+        # TODO: oad schedule here
+
+
 
 def get_socket_config():
     """ Get path to the harvesing socket file. """

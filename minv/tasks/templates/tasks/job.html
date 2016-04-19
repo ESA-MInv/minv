@@ -1,4 +1,4 @@
-{% extends "inventory/base.html" %}
+{% extends "minv/base.html" %}
 
 {% block head %}
 {{ block.super }}
@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block navbar %}
-{% with "monitor" as current %}
+{% with "tasks" as current %}
 {{ block.super }}
 {% endwith %}
 {% endblock %}
@@ -14,7 +14,7 @@
 {% block content %}
 
 <nav class="navbar navbar-default">
-  <form method="post" action="{% url 'inventory:monitor:job' job_id=job.id %}" class="navbar-form navbar-left" role="search">
+  <form method="post" action="{% url 'tasks:job' job_id=job.id %}" class="navbar-form navbar-left" role="search">
     {% csrf_token %}
     {% for short, long in form.action.field.choices %}
     <button name="action" value="{{ short }}" class="btn btn-default">{{ long }}</button>
@@ -49,8 +49,8 @@
 </table>
 
 <ol class="breadcrumb">
-  <li><a href="{% url 'inventory:root' %}">Home</a></li>
-  <li><a href="{% url 'inventory:monitor:job-list' %}">Monitor</a></li>
+  <li><a href="{% url 'root' %}">Home</a></li>
+  <li><a href="{% url 'tasks:job-list' %}">Monitor</a></li>
   <li class="active">{{ job.id }}</li>
 </ol>
 

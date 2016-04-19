@@ -27,7 +27,7 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="{% url 'inventory:root' %}">MInv</a>
+        <a class="navbar-brand" href="{% url 'root' %}">MInv</a>
       </div>
       <div class="collapse navbar-collapse" id="top-navbar-collapse">
       <ul class="nav navbar-nav">
@@ -41,14 +41,14 @@
             {% endfor %}
           </ul>
         </li>
-        <li {% if current == "monitor" %}class="active"{% endif %}><a href="{% url 'inventory:monitor:job-list' %}">Monitor</a></li>
+        <li {% if current == "monitor" %}class="active"{% endif %}><a href="{% url 'tasks:job-list' %}">Monitor</a></li>
         <li {% if current == "backup" %}class="active"{% endif %}><a href="{% url 'inventory:backup' %}">Backup</a></li>
         <li {% if current == "restore" %}class="active"{% endif %}><a href="{% url 'inventory:restore' %}">Restore</a></li>
         <li><a href="{% url 'admin:index' %}">Admin</a></li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         <li><a>Logged in as {{ user }}</a></li>
-        <li><a href="{% url 'inventory:logout' %}?next={{ request.get_full_path }}">Logout</a></li>
+        <li><a href="{% url 'logout' %}?next={{ request.get_full_path }}">Logout</a></li>
       </ul>
     </div>
   </nav>

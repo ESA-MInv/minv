@@ -12,8 +12,8 @@ class JobFilterForm(forms.Form):
         )
     )
 
-    def __init__(self):
-        super(JobFilterForm, self).__init__()
+    def __init__(self, *args, **kwargs):
+        super(JobFilterForm, self).__init__(*args, **kwargs)
         self.fields["task"] = forms.ChoiceField(
             required=False,
             choices=(("", "All"), ),

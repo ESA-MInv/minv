@@ -1,4 +1,4 @@
-{% extends "inventory/base.html" %}
+{% extends "minv/base.html" %}
 
 {% block head %}
 {{ block.super }}
@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block navbar %}
-{% with "monitor" as current %}
+{% with "tasks" as current %}
 {{ block.super }}
 {% endwith %}
 {% endblock %}
@@ -16,7 +16,7 @@
 <h1>Job Monitor</h1>
 
 <nav class="navbar navbar-default">
-  <form method="post" action="{% url 'inventory:monitor:job-list' %}" class="navbar-form navbar-left" role="search">
+  <form method="post" action="{% url 'tasks:job-list' %}" class="navbar-form navbar-left" role="search">
     {% csrf_token %}
     {% for field in filter_form.visible_fields %}
     <div class="form-group">
@@ -38,7 +38,7 @@
   </tr>
   {% for job in jobs %}
   <tr>
-    <td><a href="{% url 'inventory:monitor:job' job_id=job.id %}">{{ job.task }}</a></td>
+    <td><a href="{% url 'tasks:job' job_id=job.id %}">{{ job.task }}</a></td>
     <td>{{ job.start_time|date:'Y-m-d H:i' }}</td>
     <td>{{ job.end_time|date:'Y-m-d H:i' }}</td>
     <td>{% if job.run_time %}{{ job.run_time }}{% else %}-{% endif %}</td>
@@ -48,7 +48,7 @@
 </table>
 
 <ol class="breadcrumb">
-  <li><a href="{% url 'inventory:root' %}">Home</a></li>
+  <li><a href="{% url 'root' %}">Home</a></li>
   <li class="active">Monitor</li>
 </ol>
 

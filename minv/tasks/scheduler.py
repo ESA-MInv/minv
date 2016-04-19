@@ -159,6 +159,12 @@ class Scheduler(Thread):
         return old_count - new_count
 
     @locked
+    def reset(self):
+        """ Remove all items from the scheduler. """
+        self._items = []
+        self._cond.notify()
+
+    @locked
     def __iter__(self):
         """ Non-blocking iteration over a snapshot of the scheduled items. """
         # copy the list items to allow an early lock release
@@ -204,7 +210,7 @@ class Scheduler(Thread):
                     "Scheduled task is delayed by %f sec.",
                     total_seconds(datetime.utcnow() - when)
                 )
-                # Release temporarily the lock while executing the callback.
+                # temporarily release the lock while executing the callback.
                 self._lock.release()
                 self._callback(*args, **kwargs)
                 self._lock.acquire()

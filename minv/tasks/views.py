@@ -3,8 +3,8 @@ from django.utils.timezone import now
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-from minv.monitor import models
-from minv.monitor import forms
+from minv.tasks import models
+from minv.tasks import forms
 from minv.inventory import models as inventory_models
 
 
@@ -22,7 +22,7 @@ def job_list_view(request):
     else:
         form = forms.JobFilterForm()
     return render(
-        request, "monitor/job_list.html", {
+        request, "tasks/job_list.html", {
             "collections": inventory_models.Collection.objects.all(),
             "jobs": qs, "filter_form": form
         }
@@ -57,12 +57,12 @@ def job_view(request, job_id):
             elif action == "remove":
                 messages.info(request, "Job '%s' removed." % job)
                 job.delete()
-                return redirect("inventory:monitor:job-list")
+                return redirect("inventory:tasks:job-list")
 
     else:
         form = forms.JobActionForm()
     return render(
-        request, "monitor/job.html", {
+        request, "tasks/job.html", {
             "collections": inventory_models.Collection.objects.all(),
             "job": job, "form": form
         }

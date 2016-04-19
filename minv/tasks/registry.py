@@ -1,5 +1,5 @@
-from minv.monitor.api import monitor
-from minv.monitor import models
+from minv.tasks.api import monitor
+from minv.tasks import models
 
 
 class Registry(object):

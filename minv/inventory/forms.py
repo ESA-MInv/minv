@@ -1,7 +1,5 @@
-import json
-
 from django import forms
-from django.db import models
+from django.contrib.gis.db import models
 from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.core.validators import ValidationError, RegexValidator
@@ -206,7 +204,6 @@ class PaginationForm(forms.Form):
 
 
 def create_formfield_for_model_field(model_field):
-    print model_field
     if isinstance(model_field, models.IntegerField):
         return RangeField(
             forms.IntegerField, widget=forms.NumberInput(attrs=attrs),
@@ -252,6 +249,12 @@ class RecordSearchForm(forms.Form):
         )
         for field in inventory_models.Record._meta.fields:
             name = field.name
+
+            # skip fields that are treated otherwise
+            if name in ("id", "location", "index_file", "scene_centre",
+                        "footprint"):
+                continue
+
             if isinstance(field, models.DateTimeField):
                 if name == "begin_time":
                     continue
