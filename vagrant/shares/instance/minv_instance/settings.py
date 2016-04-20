@@ -45,8 +45,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.gis',
     'django_extensions',
+    'minv',
     'minv.inventory',
-    'minv.monitor',
     'minv.tasks',
 )
 
