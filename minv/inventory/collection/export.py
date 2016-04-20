@@ -3,10 +3,19 @@ from os.path import join, basename
 import zipfile
 import json
 from contextlib import closing
+import tempfile
+import csv
 
 from django.utils.timezone import now
+from django.db import transaction
 
+import minv
 from minv.inventory import models
+from minv.inventory.ingest import ingest
+
+
+class ImportException(Exception):
+    pass
 
 
 def export_collection(mission, file_type, filename=None,
@@ -34,13 +43,21 @@ def export_collection(mission, file_type, filename=None,
 
     # create the ZIP archive
     with closing(zipfile.ZipFile(filename, "w")) as archive:
+        # write a manifest to set the version of the exported software
+        archive.writestr("manifest.json", json.dumps({
+            "version": minv.__version__,
+            "mission": mission,
+            "file_type": file_type
+        }))
+
+        # export the configuration when required
         if configuration:
             archive.write(
                 join(collection.config_dir, "collection.conf"), "collection.conf"
             )
 
         # write location info
-        archive.writestr("locations/locations.json", json.dumps(
+        archive.writestr("locations.json", json.dumps(
             dict(
                 (location.url, {
                     "type": location.location_type,
@@ -50,6 +67,7 @@ def export_collection(mission, file_type, filename=None,
             )
         ))
 
+        # export data when required
         if data:
             for location in collection.locations.all():
                 ingested_dir = join(
@@ -64,18 +82,114 @@ def export_collection(mission, file_type, filename=None,
                         arcname=arcname
                     )
 
+                with tempfile.NamedTemporaryFile() as tmp_file:
+                    writer = csv.writer(tmp_file)
+                    writer.writerow(["filename", "text"])
+                    annotations_qs = models.Annotation.objects.filter(
+                        record__location=location
+                    ).values_list("record__filename", "text")
+                    for record_filename, text in annotations_qs:
+                        writer.writerow([record_filename, text])
+
+                    tmp_file.flush()
+
+                    archive.write(
+                        tmp_file.name, arcname=join(
+                            "locations", location.slug, "annotations.csv"
+                        )
+                    )
+
     return filename
 
 
-def import_collection(mission, file_type, filename,
-                      configuration=True, data=True):
+@transaction.atomic
+def import_collection(filename, mission=None, file_type=None):
     """ Import a previously exported archive.
     """
-    collection, created = models.Collection.objects.get_or_create(
+    collections_qs = models.Collection.objects.filter(
         mission=mission, file_type=file_type
     )
-    if created:
-        print "Created collection %s" % collection
+    if collections_qs.exists():
+        raise ImportException("Collection %s/%s already exists." % (
+            mission, file_type
+        ))
+
+    if not zipfile.is_zipfile(filename):
+        raise ImportException("File %s is not a ZIP file." % filename)
+
+    with closing(zipfile.ZipFile(filename, "r")) as archive:
+        manifest = json.loads(archive.read("manifest.json"))
+        # TODO: better version check
+
+        mission = mission or manifest["mission"]
+        file_type = file_type or manifest["file_type"]
+
+        collection = models.Collection.objects.create(
+            mission=mission, file_type=file_type
+        )
+
+        if minv.__version__ != manifest["version"]:
+            raise ImportException(
+                "Cannot import file %s due to version mismatch: %r != %r"
+                % (filename, minv.__version__, manifest["version"])
+            )
+
+        locations = json.loads(archive.read("locations.json"))
+
+        for url, values in locations.items():
+            models.Location.objects.create(
+                collection=collection, url=url, location_type=values["type"]
+            )
+
+        try:
+            archive.extract("collection.conf", collection.config_dir)
+        except KeyError:
+            pass
+
+        slug_to_location = dict(
+            (location.slug, location)
+            for location in collection.locations.all()
+        )
+
+        print slug_to_location
+
+        # extract index files and ingest them
+        members = [
+            member for member in archive.namelist()
+            if member.startswith("locations/") and
+            basename(member) != "annotations.csv"
+        ]
+        for member in members:
+            print member, member [10:]
+            slug, _, index_filename = member[10:].partition("/")
+            url = slug_to_location[slug].url
+
+            directory = join(collection.data_dir, "pending", slug)
+            archive.extract(member, directory)
+            ingest(
+                mission, file_type, url, join(directory, index_filename)
+            )
+
+        # read annotations
+        members = [
+            member for member in archive.namelist()
+            if member.startswith("locations/") and
+            member.endswith("annotations.csv")
+        ]
+        for member in members:
+            slug, _, index_filename = member[9:].partition("/")
+            location = slug_to_location[slug]
+            with archive.open(member) as annotations:
+                reader = csv.reader(annotations)
+                next(reader)  # skip header
+                for record_filename, text in reader:
+                    models.Annotation.objects.create(
+                        record=models.Record.objects.get(
+                            location=location, filename=record_filename
+                        )
+                    )
+
+    return collection
 
 
 def list_exports(mission, file_type):
