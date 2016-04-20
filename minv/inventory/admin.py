@@ -3,11 +3,6 @@ from django.contrib import admin
 from minv.inventory import models
 
 
-class MetadataFieldMappingInline(admin.TabularInline):
-    extra = 0
-    model = models.MetadataFieldMapping
-
-
 class LocationInline(admin.TabularInline):
     extra = 0
     model = models.Location
@@ -27,7 +22,7 @@ def record_count(collection):
 
 
 class CollectionAdmin(admin.ModelAdmin):
-    inlines = (LocationInline, MetadataFieldMappingInline)
+    inlines = (LocationInline,)
     list_display = (
         "mission", "file_type", location_count, index_file_count, record_count
     )
