@@ -1,9 +1,7 @@
-from os.path import join
-from ConfigParser import RawConfigParser, DuplicateSectionError
-import json
 from functools import wraps
 import tempfile
 import csv
+from os.path import basename, join
 
 from django.shortcuts import render
 from django.core.paginator import Paginator
@@ -11,12 +9,15 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from django.utils.datastructures import SortedDict
 from django.utils.timezone import now
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, Http404
 
 from minv.inventory.views import login_required
 from minv.inventory import models
 from minv.inventory import forms
 from minv.inventory import queries
+from minv.inventory.collection.export import (
+    export_collection, import_collection, list_exports
+)
 from minv.utils import get_or_none
 
 
@@ -319,14 +320,33 @@ def export_view(request, mission, file_type):
     if request.method == "POST":
         form = forms.ImportExportBaseForm(request.POST)
         if form.is_valid():
-            messages.info(request,
-                "Started export for collection %s" % collection
-            )
+            selection = form.cleaned_data["selection"]
+            configuration = False
+            data = False
+            if selection == "full":
+                configuration = True
+                data = True
+            elif selection == "config":
+                configuration = True
+            elif selection == "data":
+                data = True
+
+            try:
+                filename = export_collection(
+                    mission, file_type, None, configuration, data
+                )
+                messages.info(request,
+                    "Exported collection %s to file %s" % (
+                        collection, basename(filename)
+                    )
+                )
+            except Exception:
+                messages.error("Failed to export collection %s" % collection)
         else:
             messages.error(request,
                 "Failed to start export for collection %s" % collection
             )
-        return redirect("inventory:collection-export",
+        return redirect("inventory:collection:export",
             mission=mission, file_type=file_type
         )
 
@@ -334,7 +354,8 @@ def export_view(request, mission, file_type):
     return render(
         request, "inventory/collection/export.html", {
             "collections": models.Collection.objects.all(),
-            "collection": collection, "form": form
+            "collection": collection, "form": form,
+            "exports": list_exports(mission, file_type)
         }
     )
 
@@ -347,12 +368,32 @@ def import_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
-    form = forms.ImportForm((("export_20150829.dat", "export_20150829.dat"),))
+
+    form = forms.ImportForm(
+        tuple((export, export) for export in list_exports(mission, file_type))
+    )
     return render(
         request, "inventory/collection/import.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection, "form": form
         }
+    )
+
+
+@login_required(login_url="login")
+@check_collection
+def download_export_view(request, mission, file_type, filename):
+    """ Django view function to download a previously exported archive.
+    """
+    collection = models.Collection.objects.get(
+        mission=mission, file_type=file_type
+    )
+    if filename not in list_exports(mission, file_type):
+        raise Http404("No such export '%s'" % filename)
+
+    return StreamingHttpResponse(
+        open(join(collection.data_dir, "exports", filename), "rb"),
+        content_type="application/zip"
     )
 
 

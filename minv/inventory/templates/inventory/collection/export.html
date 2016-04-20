@@ -26,15 +26,18 @@
   </div>
 </form>
 
+{% if exports %}
 <div class="panel panel-default">
   <div class="panel-heading">Download Export Packages</div>
   <div class="panel-body">
     <ul>
-      <li><a href="#">export_20150829.ZIP</a></li>
+    {% for export in exports %}
+      <li><a href="{% url 'inventory:collection:exports' mission=collection.mission file_type=collection.file_type filename=export %}">{{ export }}</a></li>
+    {% endfor %}
     </ul>
   </div>
 </div>
-
+{% endif %}
 
 {% endblock %}
 

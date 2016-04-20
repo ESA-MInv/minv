@@ -21,6 +21,9 @@ urlpatterns = [
         url(r'^alignment/$', views.alignment_view, name="alignment"),
         url(r'^export/$', views.export_view, name="export"),
         url(r'^import/$', views.import_view, name="import"),
+        url(r'^exports/(?P<filename>[\w{}.-]+)$',
+            views.download_export_view, name="exports"
+        ),
         url(r'^configuration/$', views.configuration_view, name="configuration"),
     ]))
 ]
