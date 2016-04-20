@@ -1,12 +1,12 @@
 from os import makedirs, rmdir
 from shutil import rmtree
 from os.path import join, exists
-import json
 
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.conf import settings
+from django.utils.text import slugify
 
 from minv.inventory.collection import config
 
@@ -63,12 +63,6 @@ class Collection(models.Model):
 
     def get_metadata_field_mapping(self):
         return self.configuration.metadata_mapping
-        # with open(join(self.config_dir, "mapping.json")) as f:
-        #     return json.load(f)
-        # return dict(
-        #     (mapping.indexfile_key, mapping.search_key)
-        #     for mapping in self.metadata_field_mappings.all()
-        # )
 
     @property
     def config_dir(self):
@@ -93,20 +87,6 @@ class Collection(models.Model):
         unique_together = (("mission", "file_type"),)
 
 
-# TODO: maybe put this into a configfile per collection
-class MetadataFieldMapping(models.Model):
-    collection = models.ForeignKey("Collection",
-                                   related_name="metadata_field_mappings")
-    indexfile_key = models.CharField(max_length=256)
-    search_key = models.CharField(max_length=256, choices=SEARCH_FIELD_CHOICES)
-
-    def __unicode__(self):
-        return "%s -> %s" % (self.indexfile_key, self.search_key)
-
-    class Meta:
-        unique_together = (("collection", "search_key"),)
-
-
 class Location(models.Model):
     collection = models.ForeignKey("Collection", related_name="locations")
     url = models.URLField()
@@ -118,6 +98,10 @@ class Location(models.Model):
 
     def __unicode__(self):
         return "%s (%s)" % (self.url, self.get_location_type_display())
+
+    @property
+    def slug(self):
+        return slugify(unicode(self.url))
 
 
 class IndexFile(models.Model):

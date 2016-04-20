@@ -12,7 +12,6 @@ import zipfile
 import re
 
 from django.utils.datastructures import SortedDict
-from django.utils.text import slugify
 
 from minv.inventory import models
 from minv.inventory.ingest import ingest
@@ -51,7 +50,7 @@ def harvest(mission, file_type, url):
         location.index_files.values_list("filename", flat=True)
     )
 
-    slug = slugify(unicode(url))
+    slug = location.slug
 
     # directories for index files
     pending_dir = join(collection.data_dir, "pending", slug)
