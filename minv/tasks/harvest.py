@@ -6,7 +6,6 @@ import logging
 import xml.etree.ElementTree as ET
 import os
 from os.path import join, isfile, splitext, basename
-import errno
 import shutil
 import zipfile
 import re
@@ -25,8 +24,15 @@ class HarvestingError(Exception):
     pass
 
 
+class RetrieveError(Exception):
+    pass
+
+
 @task
 def harvest(mission, file_type, url):
+    """ Performs the harvesting for the specified collection and location.
+    Returns
+    """
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
@@ -50,25 +56,20 @@ def harvest(mission, file_type, url):
         location.index_files.values_list("filename", flat=True)
     )
 
-    slug = location.slug
-
     # directories for index files
-    pending_dir = join(collection.data_dir, "pending", slug)
-    ingested_dir = join(collection.data_dir, "ingested", slug)
-    failed_dir = join(collection.data_dir, "failed", slug)
+    pending_dir = join(collection.data_dir, "pending", location.slug)
+    ingested_dir = join(collection.data_dir, "ingested", location.slug)
 
-    for dir_path in (pending_dir, ingested_dir, failed_dir):
-        try:
-            os.makedirs(dir_path)
-        except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                raise
+    failed_retrieve = []
 
     # perform actual harvesting
     for index_file_name in itertools.chain(inserted, updated):
-        harvester.retrieve(
-            join(url, index_file_name), index_file_name, pending_dir
-        )
+        try:
+            harvester.retrieve(
+                join(url, index_file_name), index_file_name, pending_dir
+            )
+        except:
+            failed_retrieve.append(index_file_name)
 
     for index_file_name in itertools.chain(updated, deleted):
         # delete model
@@ -76,23 +77,25 @@ def harvest(mission, file_type, url):
         # remove ingested index file
         os.remove(join(ingested_dir, index_file_name))
 
+    failed_ingest = []
+
     for index_file_name in itertools.chain(updated, inserted):
+        # TODO: move the file renaming part to ingest.py
         try:
             index_file_name = extract_zipped_index_file(
                 join(pending_dir, index_file_name)
             )
             ingest(mission, file_type, url, join(pending_dir, index_file_name))
         except:
-            os.rename(
-                join(pending_dir, index_file_name),
-                join(ingested_dir, index_file_name)
-            )
-            raise
-        else:
-            os.rename(
-                join(pending_dir, index_file_name),
-                join(failed_dir, index_file_name)
-            )
+            failed_ingest.append(index_file_name)
+
+    logger.info("Finished harvesting for %s: %s" % (collection, location))
+    if failed_retrieve:
+        logger.error("Failed to retrieve %s" % ", ".join(failed_retrieve))
+    if failed_ingest:
+        logger.error("Failed to ingest %s" % ", ".join(failed_ingest))
+
+    return failed_retrieve, failed_ingest
 
 
 def select_index_files(available_index_files, ingested_index_files):
@@ -219,7 +222,7 @@ class OADSHarvester(BaseHarvester):
             os.rename(tmp_path, path)
         except IOError as exc:
             logger.error("Error saving %s: %s", path, exc)
-            raise Exception(str(exc))
+            raise RetrieveError(str(exc))
         except Exception as exc:
             logger.error("Error retrieving %s: %s", url, exc)
             raise
