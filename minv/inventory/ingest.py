@@ -1,7 +1,7 @@
 import csv
 import os
 import errno
-from os.path import basename, exists, join
+from os.path import basename, exists, join, dirname
 from datetime import datetime
 from urlparse import urlparse
 import logging
@@ -55,6 +55,13 @@ def ingest(mission, file_type, url, index_file_name):
     ingested_dir = join(collection.data_dir, "ingested", location.slug)
     failed_dir = join(collection.data_dir, "failed", location.slug)
 
+    if (basename(index_file_name) != index_file_name and
+            dirname(index_file_name) != pending_dir):
+        raise IngestError(
+            "Only pass the filename within the 'pending' directory, not the "
+            "full path"
+        )
+
     for dir_path in (pending_dir, ingested_dir, failed_dir):
         try:
             os.makedirs(dir_path)
@@ -62,7 +69,8 @@ def ingest(mission, file_type, url, index_file_name):
             if exc.errno != errno.EEXIST:
                 raise
 
-    if not exists(join(pending_dir, index_file_name)):
+    path = join(pending_dir, index_file_name)
+    if not exists(path):
         raise IngestError(
             "No such index file in pending directory: %s" % index_file_name
         )
@@ -97,7 +105,7 @@ def ingest(mission, file_type, url, index_file_name):
                 preparations[target] = parse_point
 
         count = 0
-        with open(index_file_name) as f:
+        with open(path) as f:
             reader = csv.DictReader(f, delimiter="\t")
             for row in reader:
                 # TODO: only insert rows that fit the collection

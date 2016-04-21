@@ -1,4 +1,6 @@
 import time
+import os
+import errno
 
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -25,3 +27,15 @@ class Timer(object):
         """ Stop the timer and return the ellapsed time in seconds. """
         self._stop = time.time()
         return self._stop - self._start
+
+
+def safe_makedirs(path):
+    """ Safely create a diretory path, ignoring errors when it already exists.
+    """
+    try:
+        os.makedirs(path)
+    except OSError as error:
+        # propagate any exception other than the error indicating that the
+        # directories already exist
+        if error.errno != errno.EEXIST:
+            raise

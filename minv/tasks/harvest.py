@@ -14,7 +14,7 @@ from django.utils.datastructures import SortedDict
 
 from minv.inventory import models
 from minv.inventory.ingest import ingest
-from minv.utils import Timer
+from minv.utils import Timer, safe_makedirs
 from minv.tasks.registry import task
 
 logger = logging.getLogger(__name__)
@@ -60,6 +60,9 @@ def harvest(mission, file_type, url):
     pending_dir = join(collection.data_dir, "pending", location.slug)
     ingested_dir = join(collection.data_dir, "ingested", location.slug)
 
+    safe_makedirs(pending_dir)
+    safe_makedirs(ingested_dir)
+
     failed_retrieve = []
 
     # perform actual harvesting
@@ -79,13 +82,14 @@ def harvest(mission, file_type, url):
 
     failed_ingest = []
 
+    # finally ingest the updated and newly inserted index files
     for index_file_name in itertools.chain(updated, inserted):
-        # TODO: move the file renaming part to ingest.py
         try:
             index_file_name = extract_zipped_index_file(
                 join(pending_dir, index_file_name)
             )
-            ingest(mission, file_type, url, join(pending_dir, index_file_name))
+
+            ingest(mission, file_type, url, basename(index_file_name))
         except:
             failed_ingest.append(index_file_name)
 
@@ -117,7 +121,6 @@ def select_index_files(available_index_files, ingested_index_files):
     index_files_inserted = [
         index for base, index in available.iteritems() if base not in ingested
     ]
-    print available
 
     index_files_deleted = [
         index for base, index in ingested.iteritems() if base not in available
@@ -208,8 +211,6 @@ class OADSHarvester(BaseHarvester):
         return index_files
 
     def retrieve(self, url, file_name, target_dir):
-
-        print url, file_name, target_dir
         path = join(target_dir, file_name)
         tmp_path = path + ".tmp"
         logger.debug("Retrieving %s and storing it under %s", url, path)

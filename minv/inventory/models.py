@@ -1,4 +1,4 @@
-from os import makedirs, rmdir
+from os import rmdir
 from shutil import rmtree
 from os.path import join, exists
 
@@ -9,6 +9,7 @@ from django.conf import settings
 from django.utils.text import slugify
 
 from minv.inventory.collection import config
+from minv.utils import safe_makedirs
 
 
 SEARCH_FIELD_CHOICES = (
@@ -112,6 +113,9 @@ class IndexFile(models.Model):
     update_time = models.DateTimeField()
     insertion_time = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = (("filename", "location"),)
+
     def __unicode__(self):
         return "%s (%s)" % (self.filename, self.location)
 
@@ -185,19 +189,14 @@ class Annotation(models.Model):
 @receiver(post_save)
 def on_collection_created(sender, instance, created, **kwargs):
     if sender is Collection and created:
-        try:
-            makedirs(instance.config_dir)
-        except OSError:
-            pass
+        safe_makedirs(instance.config_dir)
 
         if not exists(join(instance.config_dir, "collection.conf")):
             with open(join(instance.config_dir, "collection.conf"), "w") as f:
                 f.write("[inventory]")
                 # TODO: default values for configuration
-        try:
-            makedirs(instance.data_dir)
-        except OSError:
-            pass
+
+        safe_makedirs(instance.data_dir)
 
 
 @receiver(post_delete)
