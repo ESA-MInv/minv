@@ -1,10 +1,11 @@
-from os import makedirs, listdir
+from os import listdir
 from os.path import join, basename
 import zipfile
 import json
 from contextlib import closing
 import tempfile
 import csv
+from shutil import rmtree, move
 
 from django.utils.timezone import now
 from django.db import transaction
@@ -12,6 +13,7 @@ from django.db import transaction
 import minv
 from minv.inventory import models
 from minv.inventory.ingest import ingest
+from minv.utils import safe_makedirs
 
 
 class ImportException(Exception):
@@ -33,10 +35,7 @@ def export_collection(mission, file_type, filename=None,
     # create a default filename if none was specified
     if not filename:
         exports_dir = join(collection.data_dir, "exports")
-        try:
-            makedirs(exports_dir)
-        except OSError:
-            pass
+        safe_makedirs(exports_dir)
         filename = join(
             exports_dir, "export_%s.zip" % now().strftime("%Y%m%d-%H%M%S")
         )
@@ -151,7 +150,8 @@ def import_collection(filename, mission=None, file_type=None):
             for location in collection.locations.all()
         )
 
-        print slug_to_location
+        # create a temporary directory tree to extract files to
+        tmp_dir = tempfile.mkdtemp()
 
         # extract index files and ingest them
         members = [
@@ -159,16 +159,19 @@ def import_collection(filename, mission=None, file_type=None):
             if member.startswith("locations/") and
             basename(member) != "annotations.csv"
         ]
-        for member in members:
-            print member, member [10:]
-            slug, _, index_filename = member[10:].partition("/")
-            url = slug_to_location[slug].url
+        try:
+            for member in members:
+                slug, _, index_filename = member[10:].partition("/")
+                url = slug_to_location[slug].url
 
-            directory = join(collection.data_dir, "pending", slug)
-            archive.extract(member, directory)
-            ingest(
-                mission, file_type, url, join(directory, index_filename)
-            )
+                directory = join(collection.data_dir, "pending", slug)
+                safe_makedirs(directory)
+
+                path = archive.extract(member, tmp_dir)
+                move(path, directory)
+                ingest(mission, file_type, url, index_filename)
+        finally:
+            rmtree(tmp_dir)
 
         # read annotations
         members = [
@@ -177,16 +180,17 @@ def import_collection(filename, mission=None, file_type=None):
             member.endswith("annotations.csv")
         ]
         for member in members:
-            slug, _, index_filename = member[9:].partition("/")
+            slug, _, index_filename = member[10:].partition("/")
             location = slug_to_location[slug]
-            with archive.open(member) as annotations:
+            with closing(archive.open(member)) as annotations:
                 reader = csv.reader(annotations)
                 next(reader)  # skip header
                 for record_filename, text in reader:
                     models.Annotation.objects.create(
                         record=models.Record.objects.get(
                             location=location, filename=record_filename
-                        )
+                        ),
+                        text=text
                     )
 
     return collection
