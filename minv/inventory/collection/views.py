@@ -256,7 +256,7 @@ def alignment_view(request, mission, file_type):
     frmt = "html"
     if request.method == "POST":
         form = forms.AlignmentForm(
-            collection.locations.all(), config.available_alignment_fields,
+            collection.locations.all(), config.available_alignment_fields or [],
             request.POST
         )
         pagination_form = forms.PaginationForm(request.POST)
@@ -268,7 +268,7 @@ def alignment_view(request, mission, file_type):
             records = Paginator(qs, per_page).page(page)
     else:
         form = forms.AlignmentForm(
-            collection.locations.all(), config.available_alignment_fields
+            collection.locations.all(), config.available_alignment_fields or []
         )
         pagination_form = forms.PaginationForm(
             initial={'page': '1', 'records_per_page': '15'}
