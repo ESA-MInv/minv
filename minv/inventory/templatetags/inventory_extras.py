@@ -20,6 +20,13 @@ def render_form(form):
     return {"form": form}
 
 
+@register.inclusion_tag("inventory/extra/pagination.html")
+def render_pagination(paginator):
+    """ Inclusion tag to render a given paginator.
+    """
+    return {"paginator": paginator}
+
+
 @register.filter
 def get(obj, key):
     """ Filter to get the value of ``obj`` for ``key``.
@@ -38,3 +45,13 @@ def get_display(obj, key):
         return getattr(obj, "get_%s_display" % key)()
     except AttributeError:
         return get(obj, key)
+
+
+@register.filter
+def sizeof_fmt(num, suffix='B'):
+    num = num or 0
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)

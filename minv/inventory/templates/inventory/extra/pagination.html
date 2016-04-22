@@ -1,0 +1,25 @@
+<nav>
+  <ul class="pagination">
+    {% if paginator.number > 2 %}
+      <li>
+        <a href="#" data-page="1" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+    {% endif %}
+    {% if paginator.has_previous %}
+      <li><a href="#" data-page="{{ paginator.previous_page_number }}">{{ paginator.previous_page_number }}</a></li>
+    {% endif %}
+    <li class="active"><a href="#">{{ paginator.number }}<span class="sr-only">(current)</span></a></li>
+    {% if paginator.has_next %}
+      <li><a href="#" data-page="{{ paginator.next_page_number }}">{{ paginator.next_page_number }}</a></li>
+    {% endif %}
+    {% if paginator.has_next and paginator.next_page_number < paginator.paginator.num_pages %}
+    <li>
+      <a href="#" data-page="{{ paginator.paginator.num_pages }}" aria-label="Next">
+        <span aria-hidden="true">&raquo;</span>
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>

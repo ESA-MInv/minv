@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.utils.datastructures import SortedDict
 from django.utils.timezone import now
 from django.http import StreamingHttpResponse, Http404
+from django.db.models import Sum, Count
 
 from minv.inventory.views import login_required
 from minv.inventory import models
@@ -102,26 +103,68 @@ def search_view(request, mission, file_type):
         mission=mission, file_type=file_type
     )
 
-    records = None
+    results = None
+    result_list = None
+    result_list_location = None
     if request.method == "POST":
-        form = forms.RecordSearchForm(collection.locations.all(), request.POST)
+        search_form = forms.SearchForm(collection.locations.all(), request.POST)
         pagination_form = forms.PaginationForm(request.POST)
-        if form.is_valid() and pagination_form.is_valid():
-            qs = queries.search(collection, form.cleaned_data)
-            page = pagination_form.cleaned_data.pop("page")
-            per_page = pagination_form.cleaned_data.pop("records_per_page")
-            records = Paginator(qs, per_page).page(page)
+        result_list_form = forms.RecordSearchResultListForm(
+            collection.locations.all(), request.POST
+        )
+        forms_valid = (
+            search_form.is_valid() and pagination_form.is_valid() and
+            result_list_form.is_valid()
+        )
+        if forms_valid:
+            search_data = search_form.cleaned_data
+            location_ids = search_data.pop("locations", ())
+            result_list_location_id = result_list_form.cleaned_data[
+                "result_list_location"
+            ]
+
+            if location_ids:
+                locations = collection.locations.filter(id__in=location_ids)
+            else:
+                locations = collection.locations.all()
+
+            results = []
+            for location in locations:
+                qs = queries.search(
+                    collection, search_data, location.records.all()
+                )
+                values = qs.aggregate(
+                    volume=Sum("filesize"), count=Count("filename")
+                )
+                results.append((location, values))
+
+                if (result_list_location_id and
+                        location.id == int(result_list_location_id)):
+                    page = pagination_form.cleaned_data.pop("page")
+                    per_page = pagination_form.cleaned_data.pop(
+                        "records_per_page"
+                    )
+                    result_list = Paginator(qs, per_page).page(page)
+                    result_list_location = location
+
     else:
-        form = forms.RecordSearchForm(collection.locations.all())
+        search_form = forms.SearchForm(collection.locations.all())
         pagination_form = forms.PaginationForm(
             initial={'page': '1', 'records_per_page': '15'}
+        )
+        result_list_form = forms.RecordSearchResultListForm(
+            collection.locations.all()
         )
 
     return render(
         request, "inventory/collection/search.html", {
             "collections": models.Collection.objects.all(),
-            "collection": collection, "search_form": form,
-            "pagination_form": pagination_form, "records": records
+            "search_form": search_form,
+            "pagination_form": pagination_form,
+            "result_list_form": result_list_form,
+            "collection": collection, "results": results,
+            "result_list": result_list,
+            "result_list_location": result_list_location
         }
     )
 

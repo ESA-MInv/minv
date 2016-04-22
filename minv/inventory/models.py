@@ -124,7 +124,7 @@ optional = dict(null=True, blank=True, db_index=True)
 
 
 class Record(models.Model):
-    location = models.ForeignKey("Location")
+    location = models.ForeignKey("Location", related_name="records")
     index_file = models.ForeignKey("IndexFile")
     filename = models.CharField(max_length=256, db_index=True)
     filesize = models.IntegerField()

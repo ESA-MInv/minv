@@ -233,11 +233,11 @@ def create_formfield_for_model_field(model_field):
     raise ValueError("No such field %s" % model_field.name)
 
 
-class RecordSearchForm(forms.Form):
+class SearchForm(forms.Form):
     def __init__(self, locations, *args, **kwargs):
         """ Dynamically create form fields for eligible model fields.
         """
-        super(RecordSearchForm, self).__init__(*args, **kwargs)
+        super(SearchForm, self).__init__(*args, **kwargs)
         self.fields["locations"] = forms.MultipleChoiceField(
             required=False,
             choices=[(location.id, str(location)) for location in locations],
@@ -261,6 +261,16 @@ class RecordSearchForm(forms.Form):
                 elif name == "end_time":
                     name = "acquisition_date"
             self.fields[name] = create_formfield_for_model_field(field)
+
+
+class RecordSearchResultListForm(forms.Form):
+    def __init__(self, locations, *args, **kwargs):
+        super(RecordSearchResultListForm, self).__init__(*args, **kwargs)
+        self.fields["result_list_location"] = forms.ChoiceField(
+            required=False,
+            choices=[(location.id, str(location)) for location in locations],
+            widget=forms.HiddenInput()
+        )
 
 
 class AddAnnotationForm(forms.Form):
