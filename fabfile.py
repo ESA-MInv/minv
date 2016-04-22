@@ -68,52 +68,67 @@ def deploy(uninstall=False, restart=True, version=None):
 
 def load_test_data():
     # create a folder for data
-    sudo("mkdir -p /var/minv_data")
+    # sudo("mkdir -p /var/minv_data")
 
     # try remove the collection before creating it anew
-    sudo("minv minv_collection -d -m Landsat5 -f SIP-SCENE || true", user="minv")
+    sudo("minv collection -d -m Landsat5 -f SIP-SCENE || true", user="minv")
 
     # when no collection was there, clean up any remnants
     sudo("rm -rf /etc/minv/collections/Landsat5 || true")
 
     # create a new collection with locations
     sudo(
-        "minv minv_collection -c -m Landsat5 -f SIP-SCENE "
-        "-o http://oads1.pdgs.esa.int/ "
-        "-o http://oads2.pdgs.esa.int/ "
-        "-n http://nga1.pdgs.esa.int/ "
-        "-n http://nga2.pdgs.esa.int/",
+        "minv collection -c -m Landsat5 -f SIP-SCENE "
+        "-o https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/0/ "
+        "-o https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/1/ "
+        "-o https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/2/ ",
+        user="minv"
+    )
+
+    # override collection configuration
+    put(
+        "test/data/Landsat5/SIP-SCENE/collection.conf",
+        "/etc/minv/collections/Landsat5/SIP-SCENE/collection.conf",
+        use_sudo=True, mode=0755
+    )
+
+    # harvest the locations
+    sudo(
+        "minv harvest -m Landsat5 -f SIP-SCENE "
+        "-u https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/0/ "
+        "-u https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/1/ "
+        "-u https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/2/ ",
         user="minv"
     )
 
     # add the data and mappings
-    put("test/data", "/var/minv_data", use_sudo=True)
-    put(
-        "test/data/Landsat5/SIP-SCENE/mapping.json",
-        "/etc/minv/collections/Landsat5/SIP-SCENE/mapping.json",
-        use_sudo=True, mode=0755
-    )
-    sudo("chown -R minv:minv /var/minv_data")
+    # put("test/data", "/var/minv_data", use_sudo=True)
+    # put(
+    #     "test/data/Landsat5/SIP-SCENE/mapping.json",
+    #     "/etc/minv/collections/Landsat5/SIP-SCENE/mapping.json",
+    #     use_sudo=True, mode=0755
+    # )
+    # sudo("chown -R minv:minv /var/minv_data")
 
     # ingest data into collection/locations
-    sudo(
-        "minv minv_ingest -m Landsat5 -f SIP-SCENE "
-        "-u http://oads1.pdgs.esa.int/ "
-        "/var/minv_data/data/Landsat5/SIP-SCENE/0/"
-        "19930101-000000_19931231-235959_20150709-145236.index",
-        user="minv"
-    )
-    sudo(
-        "minv minv_ingest -m Landsat5 -f SIP-SCENE "
-        "-u http://oads2.pdgs.esa.int/ "
-        "/var/minv_data/data/Landsat5/SIP-SCENE/1/"
-        "19930101-000000_19931231-235959_20150709-145236.index",
-        user="minv"
-    )
-    sudo(
-        "minv minv_ingest -m Landsat5 -f SIP-SCENE "
-        "-u http://nga1.pdgs.esa.int/ "
-        "/var/minv_data/data/Landsat5/SIP-SCENE/2/"
-        "19930101-000000_19931231-235959_20150709-145236.index",
-        user="minv"
-    )
+    # sudo(
+    #     "minv minv_ingest -m Landsat5 -f SIP-SCENE "
+    #     "-u http://oads1.pdgs.esa.int/ "
+    #     "/var/minv_data/data/Landsat5/SIP-SCENE/0/"
+    #     "19930101-000000_19931231-235959_20150709-145236.index",
+    #     user="minv"
+    # )
+    # sudo(
+    #     "minv minv_ingest -m Landsat5 -f SIP-SCENE "
+    #     "-u http://oads2.pdgs.esa.int/ "
+    #     "/var/minv_data/data/Landsat5/SIP-SCENE/1/"
+    #     "19930101-000000_19931231-235959_20150709-145236.index",
+    #     user="minv"
+    # )
+    # sudo(
+    #     "minv minv_ingest -m Landsat5 -f SIP-SCENE "
+    #     "-u http://nga1.pdgs.esa.int/ "
+    #     "/var/minv_data/data/Landsat5/SIP-SCENE/2/"
+    #     "19930101-000000_19931231-235959_20150709-145236.index",
+    #     user="minv"
+    # )
