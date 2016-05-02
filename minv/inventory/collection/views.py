@@ -104,8 +104,6 @@ def search_view(request, mission, file_type):
     )
 
     results = None
-    result_list = None
-    result_list_location = None
     if request.method == "POST":
         search_form = forms.SearchForm(collection.locations.all(), request.POST)
         pagination_form = forms.PaginationForm(request.POST)
@@ -119,9 +117,6 @@ def search_view(request, mission, file_type):
         if forms_valid:
             search_data = search_form.cleaned_data
             location_ids = search_data.pop("locations", ())
-            result_list_location_id = result_list_form.cleaned_data[
-                "result_list_location"
-            ]
 
             if location_ids:
                 locations = collection.locations.filter(id__in=location_ids)
@@ -138,15 +133,6 @@ def search_view(request, mission, file_type):
                 )
                 results.append((location, values))
 
-                if (result_list_location_id and
-                        location.id == int(result_list_location_id)):
-                    page = pagination_form.cleaned_data.pop("page")
-                    per_page = pagination_form.cleaned_data.pop(
-                        "records_per_page"
-                    )
-                    result_list = Paginator(qs, per_page).page(page)
-                    result_list_location = location
-
     else:
         search_form = forms.SearchForm(collection.locations.all())
         pagination_form = forms.PaginationForm(
@@ -162,9 +148,84 @@ def search_view(request, mission, file_type):
             "search_form": search_form,
             "pagination_form": pagination_form,
             "result_list_form": result_list_form,
+            "collection": collection, "results": results
+        }
+    )
+
+
+@login_required(login_url="login")
+@check_collection
+def result_list_view(request, mission, file_type):
+    """
+    """
+    collection = models.Collection.objects.get(
+        mission=mission, file_type=file_type
+    )
+
+    config = collection.configuration
+    all_choices = dict((("checksum", "Checksum"),) + models.SEARCH_FIELD_CHOICES)
+
+    display_fields = SortedDict(
+        (field_id, all_choices[field_id])
+        for field_id in config.available_result_list_fields
+    )
+
+    results = None
+    result_list = None
+    result_list_location = None
+    if request.method == "POST":
+        search_form = forms.SearchForm(collection.locations.all(), request.POST)
+        pagination_form = forms.PaginationForm(request.POST)
+        result_list_form = forms.RecordSearchResultListForm(
+            collection.locations.all(), request.POST
+        )
+        forms_valid = (
+            search_form.is_valid() and pagination_form.is_valid() and
+            result_list_form.is_valid()
+        )
+        if forms_valid:
+            search_data = search_form.cleaned_data
+            result_list_location_id = result_list_form.cleaned_data[
+                "result_list_location"
+            ]
+
+            location = collection.locations.get(id=result_list_location_id)
+
+            qs = queries.search(
+                collection, search_data, location.records.all()
+            )
+
+            sort = result_list_form.cleaned_data.pop("sort", None)
+            if sort:
+                qs = qs.order_by(sort)
+
+            page = pagination_form.cleaned_data.pop("page")
+            per_page = pagination_form.cleaned_data.pop(
+                "records_per_page"
+            )
+
+            result_list = Paginator(qs, per_page).page(page)
+            result_list_location = location
+
+    else:
+        search_form = forms.SearchForm(collection.locations.all())
+        pagination_form = forms.PaginationForm(
+            initial={'page': '1', 'records_per_page': '15'}
+        )
+        result_list_form = forms.RecordSearchResultListForm(
+            collection.locations.all()
+        )
+
+    return render(
+        request, "inventory/collection/result_list.html", {
+            "collections": models.Collection.objects.all(),
+            "search_form": search_form,
+            "pagination_form": pagination_form,
+            "result_list_form": result_list_form,
             "collection": collection, "results": results,
             "result_list": result_list,
-            "result_list_location": result_list_location
+            "result_list_location": result_list_location,
+            "metadata_fields": display_fields
         }
     )
 
@@ -458,7 +519,6 @@ def configuration_view(request, mission, file_type):
 
         if configuration_form.is_valid() and mapping_formset.is_valid():
             for key, value in configuration_form.cleaned_data.items():
-                print key, value
                 setattr(config, key, value)
 
             mapping = {}
@@ -482,6 +542,8 @@ def configuration_view(request, mission, file_type):
                 initial={
                     "export_interval": config.export_interval,
                     "harvest_interval": config.harvest_interval,
+                    "available_result_list_fields":
+                        config.available_result_list_fields,
                     "available_alignment_fields":
                         config.available_alignment_fields
                 }
@@ -496,6 +558,8 @@ def configuration_view(request, mission, file_type):
             initial={
                 "export_interval": config.export_interval,
                 "harvest_interval": config.harvest_interval,
+                "available_result_list_fields":
+                    config.available_result_list_fields,
                 "available_alignment_fields":
                     config.available_alignment_fields
             }

@@ -272,6 +272,15 @@ class RecordSearchResultListForm(forms.Form):
             widget=forms.HiddenInput()
         )
 
+        sort_choices = []
+        for field in inventory_models.SEARCH_FIELD_CHOICES:
+            sort_choices.append(("-" + field[0], "-" + field[0]))
+            sort_choices.append((field[0], field[0]))
+
+        self.fields["sort"] = forms.ChoiceField(
+            required=False, choices=sort_choices, widget=forms.HiddenInput()
+        )
+
 
 class AddAnnotationForm(forms.Form):
     def __init__(self, locations, *args, **kwargs):
@@ -356,6 +365,16 @@ class CollectionConfigurationForm(forms.Form):
     export_interval = forms.CharField(required=False,
         widget=ClearableTextInput(attrs=attrs),
         validators=[RegexValidator(DURATION_REGEX)]
+    )
+    available_result_list_fields = forms.MultipleChoiceField(
+        required=True, choices=[
+            field
+            for field in inventory_models.SEARCH_FIELD_CHOICES
+            if field[0] not in (
+                "filename", "filesize", "footprint", "scene_centre"
+            )
+        ],
+        widget=forms.CheckboxSelectMultiple(attrs=list_inline)
     )
     available_alignment_fields = forms.MultipleChoiceField(
         required=True, choices=inventory_models.ALIGNMENT_FIELD_CHOICES,

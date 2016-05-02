@@ -9,6 +9,9 @@ urlpatterns = [
         url(r'^$', views.detail_view, name="detail"),
         url(r'^harvest/$', views.harvest_view, name="harvest"),
         url(r'^search/$', views.search_view, name="search"),
+        url(r'^search/result-list/$',
+            views.result_list_view, name="result_list"
+        ),
         url(r'^records/(?P<filename>[\w{}.-]+)$',
             views.record_view, name="record"
         ),

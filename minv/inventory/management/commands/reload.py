@@ -20,7 +20,7 @@ class Command(BaseCommand):
         make_option("-u", "--url", dest="urls", action="append", default=None)
     )
 
-    args = '-m MISSION -f FILE TYPE'
+    args = '-m MISSION -f FILE TYPE [ -u LOCATION URL [ -u ... ] ]'
 
     help = ('Reload all index files for selected or all locations in the '
             'collection.')
@@ -43,7 +43,7 @@ class Command(BaseCommand):
                 for url in urls
             ]
         else:
-            locations = collection.locations.all()
+            locations = list(collection.locations.all())
 
         for location in locations:
             print "Reloading index files of location %s" % location

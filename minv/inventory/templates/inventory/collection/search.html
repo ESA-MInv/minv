@@ -22,14 +22,9 @@
   <li role="presentation" class="{% if results == None %}active{% endif %}">
     <a href="#parameters" aria-controls="home" role="tab" data-toggle="tab">Parameters</a>
   </li>
-  <li role="presentation" class="{% if results == None %}disabled{% elif result_list_location == None %}active{% endif %}">
+  <li role="presentation" class="{% if results == None %}disabled{% else %}active{% endif %}">
     <a href="#results" aria-controls="profile" role="tab" {% if not results == None %}data-toggle="tab"{% endif %}>Results</a>
   </li>
-  {% if result_list_location %}
-  <li role="presentation" class="active">
-    <a href="#result_list" aria-controls="profile" role="tab" data-toggle="tab">Result List: {{ result_list_location }}</a>
-  </li>
-  {% endif %}
 </ul>
 
 <form action="{% url 'inventory:collection:search' mission=collection.mission file_type=collection.file_type %}" method="post" class="form-horizontal">
@@ -38,7 +33,7 @@
   {{ result_list_form }}
 
   <div class="tab-content">
-    <div role="tabpanel" class="tab-pane {% if results == None and result_list_location == None %}active{% endif %}" id="parameters">
+    <div role="tabpanel" class="tab-pane {% if results == None %}active{% endif %}" id="parameters">
       <div class="form-group">
         <div class="col-sm-offset-2 col-sm-10">
           <button type="submit" class="btn btn-default">Search</button>
@@ -53,7 +48,7 @@
       </div>
     </div>
 
-    <div role="tabpanel" class="tab-pane {% if result_list_location == None and results %}active{% endif %}" id="results">
+    <div role="tabpanel" class="tab-pane {% if results %}active{% endif %}" id="results">
     {% if not results %}
       The search returned no results.
     {% else %}
@@ -74,34 +69,13 @@
             </th>
             <td>{{ values.count }}</td>
             <td>{{ values.volume | sizeof_fmt }} <small>({{ values.volume }} Bytes)</small></td>
-            <td><button type="submit" class="btn btn-default" name="result_list_location" value="{{ location.id }}">Show Result List</button></td>
+            <td>
+              <button type="submit" class="btn btn-default" name="result_list_location" value="{{ location.id }}" onclick="this.form.action='{% url 'inventory:collection:result_list' mission=collection.mission file_type=collection.file_type %}'">Show Result List</button>
+            </td>
           </tr>
         {% endfor %}
         </tbody>
       </table>
-    {% endif %}
-    </div>
-    <div role="tabpanel" class="tab-pane {% if result_list_location %}active{% endif %}" id="result_list">
-    {% if not result_list %}
-      The search returned no results.
-    {% else %}
-      <table class="table table-striped table-condensed table-hover table-header-rotated">
-        <thead>
-          <tr>
-            <th>Filename</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for record in result_list %}
-          <tr>
-            <th>
-              {{ record }}
-            </th>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-      {% render_pagination result_list %}
     {% endif %}
     </div>
   </div>

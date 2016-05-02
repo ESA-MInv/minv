@@ -1,0 +1,104 @@
+{% extends "inventory/collection/base.html" %}
+{% load staticfiles %}
+{% load inventory_extras %}
+
+{% block head %}
+<script src="{% static 'inventory/js/ol.js' %}"></script>
+<link rel="stylesheet" href="{% static 'inventory/css/ol.css' %}">
+<link rel="stylesheet" href="{% static 'inventory/css/alignment.css' %}"/>
+<link rel="stylesheet" href="{% static 'inventory/css/result_list.css' %}"/>
+{{ block.super }}
+{% endblock %}
+
+{% block collection_header %}
+{% with "search" as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}
+
+{% block collection_content %}
+
+<form action="{% url 'inventory:collection:result_list' mission=collection.mission file_type=collection.file_type %}" method="post" class="form-horizontal">
+  {% csrf_token %}
+
+  {{ result_list_form }}
+  {% for field in search_form %}{{ field.as_hidden }}
+  {% endfor %}
+  {% for field in pagination_form %}{{ field.as_hidden }}
+  {% endfor %}
+
+  <button type="submit" class="btn btn-default" onclick="this.form.action='{% url 'inventory:collection:search' mission=collection.mission file_type=collection.file_type %}'">Back to Search</button>
+
+  <button type="submit" class="btn btn-default" name="download_csv" value="true">Download as CSV</button>
+
+  {{ result_list_form }}
+  {% if not result_list %}
+    The search returned no results.
+  {% else %}
+    <div class="table-container">
+      <table class="table table-striped table-condensed table-hover table-header-rotated">
+        <colgroup>
+          <col style="width: 40em">
+          {% for field_id, field_name in metadata_fields.items %}
+            <col style="width: 15em">
+          {% endfor %}
+          <col style="width: 18em">
+          <col style="width: 10em">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>
+              Filename
+              <button class="btn btn-xs" type="submit" name="sort" value="-filename">
+                <span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span>
+              </button>
+              <button class="btn btn-xs" type="submit" name="sort" value="filename">
+                <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span></th>
+              </button>
+            </th>
+            {% for field_id, field_name in metadata_fields.items %}
+              <th>{{ field_name }}
+              <button class="btn btn-xs" type="submit" name="sort" value="-{{ field_id }}">
+                <span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span>
+              </button>
+              <button class="btn btn-xs" type="submit" name="sort" value="{{ field_id }}">
+                <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span></th>
+              </button>
+            {% endfor %}
+            <th>Size</th>
+            <th>Annotations</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for record in result_list %}
+          <tr>
+            <th>
+              <a href="{% url 'inventory:collection:record' mission=collection.mission file_type=collection.file_type filename=record.filename%}">{{ record.filename }}</a>
+            </th>
+            {% for field_id, field_name in metadata_fields.items %}
+              <td>
+                {{ record | get_display:field_id }}
+              </td>
+            {% endfor %}
+            <td>
+              {{ record.filesize | sizeof_fmt }} <small>({{ record.filesize }} Bytes)</small>
+            </td>
+            <td>
+              <a href="#" data-toggle="popover" data-trigger="hover" data-placement="left" data-html="true" data-title="Annotations" data-content="{{ record.annotations.all|join:"<div class='divider'/>" }}">{{ record.annotations.all|join:' | ' }}</a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% render_pagination result_list %}
+  {% endif %}
+</form>
+
+{% endblock %}
+
+{% block collection_footer %}
+{% with "search" as current %}
+{{ block.super }}
+{% endwith %}
+{% endblock %}
