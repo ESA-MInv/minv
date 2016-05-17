@@ -9,6 +9,9 @@ def uuid_default():
     return uuid4().hex
 
 
+optional = dict(null=True, blank=True)
+
+
 class TaskBase(models.Model):
     """ Base class for scheduled or running tasks
     """
@@ -23,6 +26,13 @@ class TaskBase(models.Model):
         abstract = True
 
 
+class Schedule(TaskBase):
+    """ Model class for a scheduled job.
+    """
+    duration = models.FloatField()
+    last_execution = models.DateTimeField(**optional)
+
+
 class Job(TaskBase):
     """ Model class for a pending, running or somehow finished job.
     """
@@ -35,11 +45,13 @@ class Job(TaskBase):
                                                       ("aborted", "Aborted")),
                               default="pending")
 
-    error = models.TextField(null=True, blank=True)
-    traceback = models.TextField(null=True, blank=True)
+    schedule = models.ForeignKey(Schedule, related_name="jobs", **optional)
+
+    error = models.TextField(**optional)
+    traceback = models.TextField(**optional)
 
     start_time = models.DateTimeField(auto_now_add=True)
-    end_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(**optional)
 
     @property
     def run_time(self):
@@ -51,9 +63,3 @@ class Job(TaskBase):
 
     def __str__(self):
         return self.id if self.id else 'Job object'
-
-
-class ScheduledTask(TaskBase):
-    """ Model class for a scheduled job.
-    """
-    when = models.DateTimeField()
