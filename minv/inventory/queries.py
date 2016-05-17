@@ -16,9 +16,13 @@ def search(collection, filters=None, queryset=None):
     :rtype: :class:`QuerySet`
     """
 
-    qs = queryset if queryset is not None else models.Record.objects.filter(
-        location__collection=collection
-    )
+    if queryset is not None:
+        qs = queryset
+    else:
+        models.Record.objects.filter(
+            location__collection=collection
+        )
+
     if filters:
         for key, value in filters.items():
             if value is None or value == "":
