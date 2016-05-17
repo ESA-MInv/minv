@@ -15,7 +15,8 @@ def search(collection, filters=None, queryset=None):
     :returns: the search results
     :rtype: :class:`QuerySet`
     """
-    qs = queryset or models.Record.objects.filter(
+
+    qs = queryset if queryset is not None else models.Record.objects.filter(
         location__collection=collection
     )
     if filters:
