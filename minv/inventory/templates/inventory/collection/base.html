@@ -30,9 +30,9 @@
       <ul class="nav navbar-nav">
         <li {% if current == "search" %}class="active"{% endif %}><a href="{% url 'inventory:collection:search' mission=collection.mission file_type=collection.file_type %}">Search{% if current == "search" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
         <li {% if current == "alignment" %}class="active"{% endif %}><a href="{% url 'inventory:collection:alignment' mission=collection.mission file_type=collection.file_type %}">Alignment{% if current == "alignment" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
-        <li {% if current == "export" %}class="active"{% endif %}><a href="{% url 'inventory:collection:export' mission=collection.mission file_type=collection.file_type %}">Export{% if current == "export" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
+        <li {% if current == "export" %}class="active"{% endif %} {% if not perms.inventory.can_export %}class="disabled"{% endif %}><a {% if perms.inventory.can_export %}href="{% url 'inventory:collection:export' mission=collection.mission file_type=collection.file_type %}"{% endif %}>Export{% if current == "export" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
         <li {% if current == "import" %}class="active"{% endif %}><a href="{% url 'inventory:collection:import' mission=collection.mission file_type=collection.file_type %}">Import{% if current == "import" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
-        <li {% if current == "configuration" %}class="active"{% endif %}><a href="{% url 'inventory:collection:configuration' mission=collection.mission file_type=collection.file_type %}">Configuration{% if current == "configuration" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
+        <li {% if current == "configuration" %}class="active"{% endif %} {% if not perms.inventory.can_configure_collections %}class="disabled"{% endif %}><a {% if perms.inventory.can_configure_collections %}href="{% url 'inventory:collection:configuration' mission=collection.mission file_type=collection.file_type %}"{% endif %}>Configuration{% if current == "configuration" %}<span class="sr-only">(current)</span>{% endif %}</a></li>
         <li><a href="{% url 'admin:inventory_collection_change' collection.id %}">Admin</a></li>
       </ul>
     </div>

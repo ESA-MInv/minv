@@ -86,6 +86,11 @@ class Collection(models.Model):
 
     class Meta:
         unique_together = (("mission", "file_type"),)
+        permissions = (
+            ("can_configure_collections", "Can configure collections"),
+            ("can_export", "Can export a collection"),
+            ("can_backup", "Can backup the application"),
+        )
 
 
 class Location(models.Model):

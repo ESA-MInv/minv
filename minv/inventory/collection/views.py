@@ -11,8 +11,8 @@ from django.utils.datastructures import SortedDict
 from django.utils.timezone import now
 from django.http import StreamingHttpResponse, Http404
 from django.db.models import Sum, Count
+from django.contrib.auth.decorators import permission_required, login_required
 
-from minv.inventory.views import login_required
 from minv.inventory import models
 from minv.inventory import forms
 from minv.inventory import queries
@@ -441,7 +441,7 @@ def alignment_view(request, mission, file_type):
         return response
 
 
-@login_required(login_url="login")
+@permission_required("inventory.can_export", raise_exception=True)
 @check_collection
 def export_view(request, mission, file_type):
     """ Django view function to export configuration and data.
@@ -530,7 +530,7 @@ def download_export_view(request, mission, file_type, filename):
     )
 
 
-@login_required(login_url="login")
+@permission_required("inventory.can_configure_collections", raise_exception=True)
 @check_collection
 def configuration_view(request, mission, file_type):
     """ View function to provide a change form for the collections configuration.
