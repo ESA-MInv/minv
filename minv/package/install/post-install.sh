@@ -5,6 +5,7 @@ INSTALL_DIR=$(dirname `python -c "import minv; print(minv.__file__)"`)
 
 mkdir -p $CONF_DIR/collections
 chown -R minv:minv $CONF_DIR/collections
+chown minv:minv $CONF_DIR/minv.conf
 mkdir -p $LOG_DIR
 mkdir -p $LOG_DIR/collections
 touch $LOG_DIR/minv.log
