@@ -167,7 +167,7 @@ def result_list_view(request, mission, file_type):
 
     display_fields = SortedDict(
         (field_id, all_choices[field_id])
-        for field_id in config.available_result_list_fields
+        for field_id in config.available_result_list_fields or []
     )
 
     results = None
