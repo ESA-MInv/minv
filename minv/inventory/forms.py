@@ -297,6 +297,16 @@ class AddAnnotationForm(forms.Form):
         )
 
 
+class AddAnnotationListForm(forms.Form):
+    add_annotations_to_all = forms.BooleanField(
+        required=False, widget=forms.CheckboxInput(attrs=attrs)
+    )
+    do_add_annotation = forms.CharField(
+        required=False, widget=forms.HiddenInput()
+    )
+    text = forms.CharField(required=False, widget=forms.Textarea(attrs=attrs))
+
+
 class AlignmentForm(forms.Form):
     """ Form to gather parameters for the alignment check.
     """
@@ -367,7 +377,8 @@ class CollectionConfigurationForm(forms.Form):
         validators=[RegexValidator(DURATION_REGEX)]
     )
     available_result_list_fields = forms.MultipleChoiceField(
-        required=True, choices=[
+        required=True,
+        choices=[
             field
             for field in inventory_models.SEARCH_FIELD_CHOICES
             if field[0] not in (

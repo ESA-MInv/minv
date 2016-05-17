@@ -17,7 +17,7 @@ from minv.inventory import models
 from minv.inventory import forms
 from minv.inventory import queries
 from minv.inventory.collection.export import (
-    export_collection, import_collection, list_exports
+    export_collection, list_exports
 )
 from minv.utils import get_or_none
 
@@ -179,10 +179,12 @@ def result_list_view(request, mission, file_type):
         result_list_form = forms.RecordSearchResultListForm(
             collection.locations.all(), request.POST
         )
+
         forms_valid = (
             search_form.is_valid() and pagination_form.is_valid() and
             result_list_form.is_valid()
         )
+
         if forms_valid:
             search_data = search_form.cleaned_data
             result_list_location_id = result_list_form.cleaned_data[
@@ -207,6 +209,28 @@ def result_list_view(request, mission, file_type):
             result_list = Paginator(qs, per_page).page(page)
             result_list_location = location
 
+            # see if we need to create annotations
+            add_annotation_list_form = forms.AddAnnotationListForm(request.POST)
+            if add_annotation_list_form.is_valid() and \
+                    add_annotation_list_form.cleaned_data["text"] and \
+                    add_annotation_list_form.cleaned_data["do_add_annotation"]:
+
+                ids = map(int, request.POST.getlist(
+                    "add_record_annotation", []
+                ))
+
+                if add_annotation_list_form.cleaned_data[
+                        "add_annotations_to_all"]:
+                    annotation_qs = qs
+                else:
+                    annotation_qs = location.records.filter(pk__in=ids)
+
+                for record in annotation_qs:
+                    models.Annotation.objects.create(
+                        record=record,
+                        text=add_annotation_list_form.cleaned_data["text"]
+                    )
+
     else:
         search_form = forms.SearchForm(collection.locations.all())
         pagination_form = forms.PaginationForm(
@@ -216,13 +240,18 @@ def result_list_view(request, mission, file_type):
             collection.locations.all()
         )
 
+    # overwrite on purpose
+    add_annotation_list_form = forms.AddAnnotationListForm()
+
     return render(
         request, "inventory/collection/result_list.html", {
             "collections": models.Collection.objects.all(),
             "search_form": search_form,
             "pagination_form": pagination_form,
             "result_list_form": result_list_form,
-            "collection": collection, "results": results,
+            "add_annotation_list_form": add_annotation_list_form,
+            "collection": collection,
+            "results": results,
             "result_list": result_list,
             "result_list_location": result_list_location,
             "metadata_fields": display_fields

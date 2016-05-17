@@ -39,7 +39,6 @@
           <button type="submit" class="btn btn-default">Search</button>
         </div>
       </div>
-      {% render_form pagination_form %}
       {% render_form search_form %}
       <div class="form-group">
         <div class="col-sm-offset-2 col-sm-10">
@@ -49,6 +48,7 @@
     </div>
 
     <div role="tabpanel" class="tab-pane {% if results %}active{% endif %}" id="results">
+    {% render_form pagination_form %}
     {% if not results %}
       The search returned no results.
     {% else %}
@@ -70,7 +70,7 @@
             <td>{{ values.count }}</td>
             <td>{{ values.volume | sizeof_fmt }} <small>({{ values.volume }} Bytes)</small></td>
             <td>
-              <button type="submit" class="btn btn-default" name="result_list_location" value="{{ location.id }}" onclick="this.form.action='{% url 'inventory:collection:result_list' mission=collection.mission file_type=collection.file_type %}'">Show Result List</button>
+              <button type="submit" class="btn btn-default btn-xs" name="result_list_location" value="{{ location.id }}" onclick="this.form.action='{% url 'inventory:collection:result_list' mission=collection.mission file_type=collection.file_type %}'">Show Result List</button>
             </td>
           </tr>
         {% endfor %}

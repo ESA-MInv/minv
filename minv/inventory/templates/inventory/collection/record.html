@@ -90,7 +90,7 @@
 <form class="form" action="{% url 'inventory:collection:annotation_add' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
   {% csrf_token %}
   {% render_form add_annotation_form %}
-      <button type="submit" class="btn btn-default">Add Annotation</button>
+  <button type="submit" class="btn btn-default">Add Annotation</button>
 </form>
 
 

@@ -38,6 +38,7 @@
     <div class="table-container">
       <table class="table table-striped table-condensed table-hover table-header-rotated">
         <colgroup>
+          <col style="width: 2em">
           <col style="width: 40em">
           {% for field_id, field_name in metadata_fields.items %}
             <col style="width: 15em">
@@ -47,6 +48,7 @@
         </colgroup>
         <thead>
           <tr>
+            <th></th>
             <th>
               Filename
               <button class="btn btn-xs" type="submit" name="sort" value="-filename">
@@ -72,6 +74,10 @@
         <tbody>
         {% for record in result_list %}
           <tr>
+            <td>
+              {# TODO: remove this and add a field #}
+              <input type="checkbox" name="add_record_annotation" value="{{ record.id }}">
+            </td>
             <th>
               <a href="{% url 'inventory:collection:record' mission=collection.mission file_type=collection.file_type filename=record.filename%}">{{ record.filename }}</a>
             </th>
@@ -90,6 +96,11 @@
         {% endfor %}
         </tbody>
       </table>
+
+
+      {% render_form add_annotation_list_form %}
+
+      <button type="submit" class="btn btn-default" name="do_add_annotation" value="true">Add Annotation</button>
     </div>
     {% render_pagination result_list %}
   {% endif %}
