@@ -91,6 +91,10 @@ def load_test_data():
         "/etc/minv/collections/Landsat5/SIP-SCENE/collection.conf",
         use_sudo=True, mode=0755
     )
+    sudo(
+        "chown minv:minv "
+        "/etc/minv/collections/Landsat5/SIP-SCENE/collection.conf"
+    )
 
     # harvest the locations
     sudo(
