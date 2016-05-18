@@ -12,7 +12,7 @@ from django.utils.timezone import utc
 from django.contrib.gis.db.models import (
     DateTimeField, CharField, MultiPolygonField, PointField
 )
-from django.contrib.gis.geos import MultiPolygon, Point
+from django.contrib.gis.geos import MultiPolygon, Polygon, Point
 
 from minv.inventory import models
 from minv.geom_utils import fix_footprint
@@ -26,7 +26,16 @@ def parse_index_time(value):
 
 
 def parse_footprint(value):
-    return MultiPolygon(fix_footprint(value)[0])
+    # we must translate from y/x to x/y here
+    rings = fix_footprint(value)[0]
+    for ring in rings:
+        ring[:] = [
+            (point[1], point[0])
+            for point in ring
+        ]
+    return MultiPolygon(
+        Polygon(*rings)
+    )
 
 
 def parse_point(value):
@@ -38,7 +47,7 @@ class IngestError(Exception):
 
 
 @transaction.atomic
-def ingest(mission, file_type, url, index_file_name):
+def ingest(mission, file_type, url, index_file_name, fail_fast=False):
     """ Function to ingest an indexfile into the collection identified by
     ``mission`` and ``file_type``. The indexfile must be located in the
     ``pending`` folder of the collections data directory.
@@ -137,7 +146,8 @@ def ingest(mission, file_type, url, index_file_name):
             "Failed to ingest index file %s for %s (%s)"
             % (index_file_name, collection, location.url)
         )
-        raise
+        if fail_fast:
+            raise
     else:
         # move file to ingested directory
         os.rename(
