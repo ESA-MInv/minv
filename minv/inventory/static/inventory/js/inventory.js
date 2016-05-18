@@ -166,8 +166,7 @@ $(function() {
       $parent.find('#id_area_3').val(extent[2]);
     });
     
-    // listen on changes in the adjacent inputs
-    $parent.find('input[type="text"]').change(function() {
+    var onChange = function() {
       vectorSource.clear();
       var minlat = parseFloat($parent.find('#id_area_0').val());
       var minlon = parseFloat($parent.find('#id_area_1').val());
@@ -185,7 +184,13 @@ $(function() {
       var feature = new ol.Feature();
       feature.setGeometry(polygon);
       vectorSource.addFeature(feature);
-    });
+    }
+
+    // listen on changes in the adjacent inputs
+    $parent.find('input[type="text"]').change(onChange);
+
+    // get a BBox if already defined
+    onChange();
 
     // shim to work around invisibility bug in Bootstrap tabs
     $("a[data-toggle='tab'][href='#parameters']").on("shown.bs.tab", function() {
