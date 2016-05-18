@@ -240,23 +240,70 @@ def result_list_view(request, mission, file_type):
             collection.locations.all()
         )
 
-    # overwrite on purpose
-    add_annotation_list_form = forms.AddAnnotationListForm()
+    # Response formats
 
-    return render(
-        request, "inventory/collection/result_list.html", {
-            "collections": models.Collection.objects.all(),
-            "search_form": search_form,
-            "pagination_form": pagination_form,
-            "result_list_form": result_list_form,
-            "add_annotation_list_form": add_annotation_list_form,
-            "collection": collection,
-            "results": results,
-            "result_list": result_list,
-            "result_list_location": result_list_location,
-            "metadata_fields": display_fields
-        }
-    )
+    if request.POST.get("download_csv"):
+        keys = display_fields.keys()
+        f = tempfile.SpooledTemporaryFile()
+        writer = csv.writer(f, delimiter=",")
+        writer.writerow(
+            ["filename"] + keys
+        )
+        for record in qs:
+            writer.writerow([
+                record.filename
+            ] + [
+                getattr(record, key, "")
+                for key in keys
+            ])
+
+        size = f.tell()
+        f.seek(0)
+
+        response = StreamingHttpResponse(f, content_type="text/csv")
+        response["Content-Length"] = str(size)
+        response["Content-Disposition"] = (
+            'inline; filename="search-%s.csv"' % (
+                now().replace(microsecond=0, tzinfo=None).isoformat("T")
+            )
+        )
+        return response
+
+    elif request.POST.get("download_filenames"):
+        f = tempfile.SpooledTemporaryFile()
+        for record in qs:
+            f.write(record.filename)
+            f.write("\n")
+
+        size = f.tell()
+        f.seek(0)
+
+        response = StreamingHttpResponse(f, content_type="text/plain")
+        response["Content-Length"] = str(size)
+        response["Content-Disposition"] = (
+            'inline; filename="search-%s.txt"' % (
+                now().replace(microsecond=0, tzinfo=None).isoformat("T")
+            )
+        )
+        return response
+
+    else:
+        # overwrite on purpose
+        add_annotation_list_form = forms.AddAnnotationListForm()
+        return render(
+            request, "inventory/collection/result_list.html", {
+                "collections": models.Collection.objects.all(),
+                "search_form": search_form,
+                "pagination_form": pagination_form,
+                "result_list_form": result_list_form,
+                "add_annotation_list_form": add_annotation_list_form,
+                "collection": collection,
+                "results": results,
+                "result_list": result_list,
+                "result_list_location": result_list_location,
+                "metadata_fields": display_fields
+            }
+        )
 
 
 @login_required(login_url="login")
