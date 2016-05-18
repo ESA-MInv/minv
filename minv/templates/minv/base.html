@@ -44,7 +44,7 @@
         <li {% if current == "monitor" %}class="active"{% endif %}><a href="{% url 'tasks:job-list' %}">Monitor</a></li>
         <li {% if current == "backup" %}class="active"{% endif %}><a href="{% url 'inventory:backup' %}">Backup</a></li>
         <li {% if current == "restore" %}class="active"{% endif %}><a href="{% url 'inventory:restore' %}">Restore</a></li>
-        <li><a href="{% url 'admin:index' %}">Admin</a></li>
+        {% if request.user.is_staff %}<li><a href="{% url 'admin:index' %}">Admin</a></li>{% endif %}
       </ul>
       <ul class="nav navbar-nav navbar-right">
         <li><a>Logged in as {{ user }}</a></li>
