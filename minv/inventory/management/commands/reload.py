@@ -4,6 +4,8 @@ from optparse import make_option
 import tempfile
 import shutil
 import glob
+import csv
+from uuid import uuid4
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -53,6 +55,8 @@ class Command(BaseCommand):
                     location
                 )
             except Exception as exc:
+                if options.get("traceback"):
+                    raise
                 print (
                     "Failed to reload index files in location %s. "
                     "Error was %s" % (
@@ -64,6 +68,7 @@ class Command(BaseCommand):
     def handle_location(self, collection, location):
         tmp_dir = tempfile.mkdtemp()
         shutil.copytree(collection.data_dir, join(tmp_dir, "backup"))
+        annotations_file = tempfile.TemporaryFile()
 
         ingested_dir = join(collection.data_dir, "ingested", location.slug)
         pending_dir = join(collection.data_dir, "pending", location.slug)
@@ -75,6 +80,17 @@ class Command(BaseCommand):
             # move all files from ingested dir to pending dir
             for path in glob.iglob(join(ingested_dir, "*")):
                 os.rename(path, join(pending_dir, basename(path)))
+
+            # save all annotations to a CSV
+            writer = csv.writer(annotations_file, delimiter="\t")
+            writer.writerow(["filename", "annotation"])
+
+            for record in location.records.filter():
+                for annotation in record.annotations.all():
+                    writer.writerow([record.filename, annotation.text])
+
+            annotations_file.seek(0)
+
             # delete all index file records in database
             location.index_files.all().delete()
 
@@ -82,12 +98,22 @@ class Command(BaseCommand):
             for path in glob.iglob(join(pending_dir, "*")):
                 ingest(
                     collection.mission, collection.file_type, location.url,
-                    basename(path)
+                    basename(path), fail_fast=True
+                )
+
+            # restore annotations and remove temporary file
+            reader = csv.reader(annotations_file, delimiter="\t")
+            next(reader)  # skip header
+            for row in reader:
+                models.Annotation.objects.create(
+                    record=location.records.get(filename=row[0]),
+                    text=row[1]
                 )
 
         except:
             # restore backups
             shutil.rmtree(collection.data_dir)
             shutil.move(join(tmp_dir, "backup"), collection.data_dir)
+            raise
         finally:
             shutil.rmtree(tmp_dir)
