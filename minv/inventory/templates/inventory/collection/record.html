@@ -76,7 +76,11 @@
         {% if record and record.annotations.exists %}
           <b>{{ location }}</b>
           {% for annotation in record.annotations.all %}
-          <form action="{% url 'inventory:collection:annotation_delete' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">{% csrf_token %}<input type="hidden" name="annotation" value="{{ annotation.pk }}"><pre>{{ annotation.text }} <button type="submit" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button></pre></form>
+          <form action="{% url 'inventory:collection:annotation_delete' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="annotation" value="{{ annotation.pk }}">
+            <pre>{{ annotation.text }} <button type="submit" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button></pre>
+          </form>
           {% endfor %}
         {% endif %}
       {% endfor %}
