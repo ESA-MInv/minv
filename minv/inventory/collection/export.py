@@ -40,13 +40,20 @@ def export_collection(mission, file_type, filename=None,
             exports_dir, "export_%s.zip" % now().strftime("%Y%m%d-%H%M%S")
         )
 
+    with collection.get_lock():
+        return _export_collection_locked(
+            collection, filename, configuration, data
+        )
+
+
+def _export_collection_locked(collection, filename, configuration, data):
     # create the ZIP archive
     with closing(zipfile.ZipFile(filename, "w")) as archive:
         # write a manifest to set the version of the exported software
         archive.writestr("manifest.json", json.dumps({
             "version": minv.__version__,
-            "mission": mission,
-            "file_type": file_type
+            "mission": collection.mission,
+            "file_type": collection.file_type
         }))
 
         # export the configuration when required

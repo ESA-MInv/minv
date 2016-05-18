@@ -29,13 +29,18 @@ class RetrieveError(Exception):
 
 
 @task
-def harvest(mission, file_type, url):
+def harvest(mission, file_type, url, fail_fast=False):
     """ Performs the harvesting for the specified collection and location.
     Returns
     """
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
+    with collection.get_lock():
+        return _harvest_locked(collection, url, fail_fast)
+
+
+def _harvest_locked(collection, url, fail_fast):
     location = collection.locations.get(url=url)
 
     if location.location_type == "oads":
@@ -89,9 +94,14 @@ def harvest(mission, file_type, url):
                 join(pending_dir, index_file_name)
             )
 
-            ingest(mission, file_type, url, basename(index_file_name))
+            ingest(
+                collection.mission, collection.file_type, url,
+                basename(index_file_name)
+            )
         except:
             failed_ingest.append(index_file_name)
+            if fail_fast:
+                raise
 
     logger.info("Finished harvesting for %s: %s" % (collection, location))
     if failed_retrieve:

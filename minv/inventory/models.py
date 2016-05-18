@@ -9,7 +9,7 @@ from django.conf import settings
 from django.utils.text import slugify
 
 from minv.inventory.collection import config
-from minv.utils import safe_makedirs
+from minv.utils import safe_makedirs, FileLock
 
 
 SEARCH_FIELD_CHOICES = (
@@ -84,6 +84,12 @@ class Collection(models.Model):
             settings.MINV_DATA_DIR, "collections", self.mission, self.file_type
         )
 
+    def get_lock(self):
+        lock_filename = join(
+            settings.MINV_LOCK_DIR, self.mission, self.file_type + ".lock"
+        )
+        return FileLock(lock_filename)
+
     class Meta:
         unique_together = (("mission", "file_type"),)
         permissions = (
@@ -132,8 +138,8 @@ class Record(models.Model):
     location = models.ForeignKey("Location", related_name="records")
     index_file = models.ForeignKey("IndexFile")
     filename = models.CharField(max_length=256, db_index=True)
-    filesize = models.IntegerField()
-    checksum = models.CharField(max_length=256)
+    filesize = models.IntegerField(**optional)
+    checksum = models.CharField(max_length=256, **optional)
 
     # TODO: "row" or "offset" in file
 
@@ -195,6 +201,7 @@ class Annotation(models.Model):
 def on_collection_created(sender, instance, created, **kwargs):
     if sender is Collection and created:
         safe_makedirs(instance.config_dir)
+        safe_makedirs(join(settings.MINV_LOCK_DIR, instance.mission))
 
         if not exists(join(instance.config_dir, "collection.conf")):
             with open(join(instance.config_dir, "collection.conf"), "w") as f:
