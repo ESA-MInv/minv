@@ -15,3 +15,6 @@ class JobAdmin(admin.ModelAdmin):
     list_display = ("id", "task", "status", duration)
 
 admin.site.register(models.Job, JobAdmin)
+
+
+admin.site.register(models.ScheduledJob)

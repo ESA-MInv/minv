@@ -20,17 +20,27 @@ class TaskBase(models.Model):
 
     @property
     def argument_values(self):
-        return json.loads(self.arguments)
+        try:
+            values = self._argument_values
+        except AttributeError:
+            values = self._argument_values = json.loads(self.arguments)
+
+        return values
 
     class Meta:
         abstract = True
 
 
-class Schedule(TaskBase):
+class ScheduledJob(TaskBase):
     """ Model class for a scheduled job.
     """
-    duration = models.FloatField()
+    when = models.DateTimeField()
     last_execution = models.DateTimeField(**optional)
+
+    def __str__(self):
+        return "%s at %s seconds args=%s" % (
+            self.task, self.when.isoformat(), self.arguments
+        )
 
 
 class Job(TaskBase):
@@ -45,7 +55,7 @@ class Job(TaskBase):
                                                       ("aborted", "Aborted")),
                               default="pending")
 
-    schedule = models.ForeignKey(Schedule, related_name="jobs", **optional)
+    schedule = models.ForeignKey(ScheduledJob, related_name="jobs", **optional)
 
     error = models.TextField(**optional)
     traceback = models.TextField(**optional)
