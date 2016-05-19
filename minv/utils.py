@@ -3,6 +3,8 @@ import os
 import errno
 import fcntl
 from functools import wraps
+from datetime import timedelta
+import re
 
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -41,6 +43,49 @@ def safe_makedirs(path):
         # directories already exist
         if error.errno != errno.EEXIST:
             raise
+
+
+RE_ISO_8601_DURATION = re.compile(
+    r"^(?P<sign>[+-])?P"
+    r"(?:(?P<years>\d+(\.\d+)?)Y)?"
+    r"(?:(?P<months>\d+(\.\d+)?)M)?"
+    r"(?:(?P<days>\d+(\.\d+)?)D)?"
+    r"T?(?:(?P<hours>\d+(\.\d+)?)H)?"
+    r"(?:(?P<minutes>\d+(\.\d+)?)M)?"
+    r"(?:(?P<seconds>\d+(\.\d+)?)S)?$"
+)
+
+
+def parse_duration(value):
+    """ Parses an ISO 8601 duration string into a python timedelta object.
+    Raises a `ValueError` if the conversion was not possible.
+    """
+    if isinstance(value, timedelta):
+        return value
+
+    match = RE_ISO_8601_DURATION.match(value)
+    if not match:
+        raise ValueError(
+            "Could not parse ISO 8601 duration from '%s'." % value
+        )
+    match = match.groupdict()
+
+    sign = -1 if "-" == match['sign'] else 1
+    days = float(match['days'] or 0)
+    days += float(match['months'] or 0) * 30  # ?!
+    days += float(match['years'] or 0) * 365  # ?!
+    fsec = float(match['seconds'] or 0)
+    fsec += float(match['minutes'] or 0) * 60
+    fsec += float(match['hours'] or 0) * 3600
+
+    return sign * timedelta(days, fsec)
+
+
+def total_seconds(tdelta):
+    """ Calculate the total number of seconds of a timedelta object. Workaround
+    for missing method of :class:`datetime.timedelta` objects in Python 2.6.
+    """
+    return 1e-6*tdelta.microseconds + tdelta.seconds + 8.64e+4*tdelta.days
 
 
 class FileLockException(Exception):
