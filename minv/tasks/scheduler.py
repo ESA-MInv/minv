@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 import logging
 
-from django.utils.timezone import UTC
+from django.utils.timezone import utc
 
 
 logger = logging.getLogger(__name__)
@@ -92,7 +92,7 @@ class Scheduler(Thread):
         elif isinstance(when, timedelta):
             return when + datetime.utcnow()
         elif isinstance(when, datetime):
-            return when.astimezone(UTC).replace(tzinfo=None)
+            return when.astimezone(utc).replace(tzinfo=None)
         elif isinstance(when, int):
             return datetime.utcfromtimestamp(when)
         else:
