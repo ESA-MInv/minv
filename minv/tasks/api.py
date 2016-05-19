@@ -1,4 +1,5 @@
 from json import dumps
+import traceback
 
 from django.utils.timezone import now
 
@@ -31,12 +32,13 @@ class JobContext(object):
         self.job.save()
         return self
 
-    def __exit__(self, etype=None, value=None, traceback=None):
-        if (etype, value, traceback) == (None, None, None):
+    def __exit__(self, etype=None, value=None, tb=None):
+        if (etype, value, tb) == (None, None, None):
             self.job.status = "finished"
         else:
             self.job.status = "failed"
             self.job.error = str(value)
+            self.job.traceback = "\n".join(traceback.format_tb(tb))
 
         self.job.end_time = now()
         self.job.full_clean()
