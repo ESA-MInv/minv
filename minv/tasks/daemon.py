@@ -1,6 +1,6 @@
 import os
 import socket
-from os.path import dirname, isdir
+from os.path import dirname, isdir, exists
 from signal import SIGTERM, SIGINT, signal
 import logging
 import errno
@@ -27,6 +27,9 @@ class Daemon(object):
         self.executor_pool = None
 
     def run(self):
+        """ Run the Daemon. Setup signal handler, task registry, scheduler,
+        listener and executors. Runs the main control loop.
+        """
         try:
             # setup signal handlers for shutdown or immediate termination
             signal(SIGINT, self.shutdown)
@@ -34,7 +37,7 @@ class Daemon(object):
 
             reader = DaemonReader()
 
-            registry.initialize(getattr(settings, 'MINV_TASK_MODULES', []))
+            registry.initialize(getattr(settings, 'MINV_TASK_MODULES'))
 
             # create executors, listener and scheduler
             self.executor_pool = ThreadPool(reader.num_workers)  # TODO: threading or process pool
@@ -97,9 +100,8 @@ class Daemon(object):
         """ Reload the scheduled items from the database.
         """
         self.scheduler.reset()
-        scheduled_tasks = models.ScheduledTask.objects.all()
-        for scheduled_task in scheduled_tasks:
-            self.scheduler.schedule(scheduled_task.when, scheduled_task)
+        for scheduled_task in models.ScheduledJob.objects.all():
+            self.scheduler.schedule(scheduled_task.when, [scheduled_task])
 
 
 def get_socket_config():
@@ -124,6 +126,9 @@ def get_socket_config():
 def get_listener():
     """ Get daemon socket listener (server end-point). """
     address, family = get_socket_config()
+    if family == "AF_UNIX" and exists(address):
+        os.unlink(address)
+
     listener = Listener(address, family)
     if family == "AF_UNIX":
         os.chmod(address, 0700)
@@ -133,3 +138,10 @@ def get_listener():
 def get_client():
     """ Get daemon socket sender (client end-point). """
     return Client(*get_socket_config())
+
+
+def send_reload_schedule():
+    """ Send a message to the daemon to reload its schedule.
+    """
+    client = get_client()
+    client.send("reload")
