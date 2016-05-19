@@ -19,6 +19,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 MINV_CONFIG_DIR = '/etc/minv'
 MINV_DATA_DIR = '/srv/minv'
 MINV_LOCK_DIR = '/tmp/minv/lock'
+MINV_TASK_MODULES = [
+    'minv.tasks.harvest',
+]
 
 
 # Quick-start development settings - unsuitable for production

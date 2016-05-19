@@ -18,6 +18,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 MINV_CONFIG_DIR = '/etc/minv'
 MINV_DATA_DIR = '/srv/minv'
+MINV_LOCK_DIR = '/tmp/minv/lock'
+MINV_TASK_MODULES = [
+    'minv.tasks.harvest',
+]
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
@@ -111,6 +116,9 @@ USE_TZ = True
 
 STATIC_URL = '/minv_static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+
+LOGIN_URL = '/login'
 
 
 LOGGING = {
