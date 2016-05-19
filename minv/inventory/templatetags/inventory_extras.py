@@ -21,10 +21,10 @@ def render_form(form):
 
 
 @register.inclusion_tag("inventory/extra/pagination.html")
-def render_pagination(paginator):
+def render_pagination(page):
     """ Inclusion tag to render a given paginator.
     """
-    return {"paginator": paginator}
+    return {"page": page}
 
 
 @register.filter

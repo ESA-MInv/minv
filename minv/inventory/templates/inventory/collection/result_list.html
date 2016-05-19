@@ -37,6 +37,9 @@
   {% if not result_list %}
     The search returned no results.
   {% else %}
+
+    {% render_pagination result_list %}
+    Showing {{ result_list|length }} of a total of {{ result_list.paginator.count }} records.
     <div class="table-container">
       <table class="table table-striped table-condensed table-hover table-header-rotated">
         <colgroup>
@@ -98,13 +101,11 @@
         {% endfor %}
         </tbody>
       </table>
-
-
-      {% render_form add_annotation_list_form %}
-
-      <button type="submit" class="btn btn-default" name="do_add_annotation" value="true">Add Annotation</button>
     </div>
     {% render_pagination result_list %}
+
+    {% render_form add_annotation_list_form %}
+    <button type="submit" class="btn btn-default" name="do_add_annotation" value="true">Add Annotation</button>
   {% endif %}
 </form>
 
