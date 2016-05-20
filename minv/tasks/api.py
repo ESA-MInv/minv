@@ -1,5 +1,6 @@
 from json import dumps
 import traceback
+import json
 
 from django.utils.timezone import now
 
@@ -43,3 +44,29 @@ class JobContext(object):
         self.job.end_time = now()
         self.job.full_clean()
         self.job.save()
+
+
+def schedule(task, when, arguments):
+    """ Utility function to create a ScheduledJob object, and send a notification
+    to the daemon to reload the schedule
+    """
+
+    models.ScheduledJob.objects.create(
+        task=task, when=when, arguments=json.dumps(arguments)
+    )
+    # import here to resolve circular import issue
+    from minv.tasks.daemon import send_reload_schedule
+    send_reload_schedule()
+
+
+def schedule_many(many):
+    """ Utility function to create many ScheduledJob objects, and send a
+    notification to the daemon to reload the schedule
+    """
+    for task, when, arguments in many:
+        models.ScheduledJob.objects.create(
+            task=task, when=when, arguments=json.dumps(arguments)
+        )
+    # import here to resolve circular import issue
+    from minv.tasks.daemon import send_reload_schedule
+    send_reload_schedule()
