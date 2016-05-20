@@ -27,19 +27,22 @@
   {% for field in pagination_form %}{{ field.as_hidden }}
   {% endfor %}
 
-  <button type="submit" class="btn btn-default" onclick="this.form.action='{% url 'inventory:collection:search' mission=collection.mission file_type=collection.file_type %}'">Back to Search</button>
-
-  <button type="submit" class="btn btn-default" name="download_csv" value="true">Download as CSV</button>
-
-  <button type="submit" class="btn btn-default" name="download_filenames" value="true">Download Filenames</button>
+  
 
   {{ result_list_form }}
   {% if not result_list %}
     The search returned no results.
   {% else %}
+    <p>Showing {{ result_list|length }} of a total of {{ result_list.paginator.count }} records.</p>
 
+    <div class="btn-group">
+      <button type="submit" class="btn btn-default" onclick="this.form.action='{% url 'inventory:collection:search' mission=collection.mission file_type=collection.file_type %}'">Back to Search</button>
+      <button type="submit" class="btn btn-default" name="download_csv" value="true">Download as CSV</button>
+      <button type="submit" class="btn btn-default" name="download_filenames" value="true">Download Filenames</button>
+    </div>
+    
     {% render_pagination result_list %}
-    Showing {{ result_list|length }} of a total of {{ result_list.paginator.count }} records.
+
     <div class="table-container">
       <table class="table table-striped table-condensed table-hover table-header-rotated">
         <colgroup>
