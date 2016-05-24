@@ -118,7 +118,7 @@ def _harvest_locked(collection, url, reschedule):
     # if this was a scheduled harvest, reschedule it again
     if reschedule:
         try:
-            interval = collection.configuration.harvesting_interval
+            interval = collection.configuration.harvest_interval
             schedule("harvest", now() + interval, {
                 "mission": collection.mission,
                 "file_type": collection.file_type,
