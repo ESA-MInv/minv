@@ -2,9 +2,11 @@ from django.shortcuts import render, redirect
 from django.utils.timezone import now
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.paginator import Paginator
 
 from minv.tasks import models
 from minv.tasks import forms
+from minv.inventory import forms as inventory_forms
 from minv.inventory import models as inventory_models
 
 
@@ -13,18 +15,37 @@ def job_list_view(request):
     """ Django view to show an overview list of all running, finished, errored
     etc jobs.
     """
-    qs = models.Job.objects.all().order_by("start_time")
-    if request.method == "POST":
-        form = forms.JobFilterForm(request.POST)
-        if form.is_valid() and form.cleaned_data["status"]:
-            qs = qs.filter(status=form.cleaned_data["status"])
 
+    qs = models.Job.objects.all().order_by("-start_time")
+    scheduled_jobs = models.ScheduledJob.objects.all().order_by("-when")
+
+    page = 1
+    per_page = 15
+
+    if request.method == "POST":
+        filter_form = forms.JobFilterForm(request.POST)
+        pagination_form = inventory_forms.PaginationForm(request.POST)
+        if filter_form.is_valid() and filter_form.cleaned_data["status"]:
+            qs = qs.filter(status=filter_form.cleaned_data["status"])
+
+        if pagination_form.is_valid():
+            page = pagination_form.cleaned_data.pop("page")
+            per_page = pagination_form.cleaned_data.pop(
+                "records_per_page"
+            )
     else:
-        form = forms.JobFilterForm()
+        filter_form = forms.JobFilterForm()
+        pagination_form = inventory_forms.PaginationForm({
+            "per_page": per_page, "page": page
+        })
+
+    jobs = Paginator(qs, per_page).page(page)
     return render(
         request, "tasks/job_list.html", {
             "collections": inventory_models.Collection.objects.all(),
-            "jobs": qs, "filter_form": form
+            "jobs": jobs, "scheduled_jobs": scheduled_jobs,
+            "filter_form": filter_form,
+            "pagination_form": pagination_form
         }
     )
 
