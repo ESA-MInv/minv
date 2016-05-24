@@ -2,14 +2,12 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from minv.tasks.harvest import harvest
-from minv.inventory import models
+from minv.commands import CollectionCommand
+from minv.tasks.registry import registry
 
 
-class Command(BaseCommand):
+class Command(CollectionCommand):
     option_list = BaseCommand.option_list + (
-        make_option("-m", "--mission", dest="mission"),
-        make_option("-f", "--file-type", dest="file_type"),
         make_option("-u", "--url", dest="urls", default=None,
             action="append", help="The harvesting location to harvest."
         ),
@@ -19,20 +17,15 @@ class Command(BaseCommand):
         ),
     )
 
-    args = '-m MISSION -f FILE TYPE -u <location-url> [ -u <location-url> ... ]'
+    args = (
+        'MISSION/FILE-TYPE ( -u <location-url> [ -u <location-url> ... ] | -a )'
+    )
 
     help = 'Harvest the whole collection or specific locations of a collection.'
 
-    def handle(self, *args, **options):
-        if not options["urls"]:
+    def handle_collection(self, collection, *args, **options):
+        if not options["urls"] and not options["all"]:
             raise CommandError("No location URLs specified.")
-
-        mission = options["mission"]
-        file_type = options["file_type"]
-
-        collection = models.Collection.objects.get(
-            mission=mission, file_type=file_type
-        )
 
         if options.get("all"):
             urls = collection.locations.values_list("url", flat=True)
@@ -47,7 +40,12 @@ class Command(BaseCommand):
                 print "Harvesting location %s of collection %s" % (
                     collection, url
                 )
-                failed_retrieve, failed_ingest = harvest(mission, file_type, url)
+                failed_retrieve, failed_ingest = registry.run(
+                    "harvest",
+                    mission=collection.mission,
+                    file_type=collection.file_type,
+                    url=url
+                )
                 if failed_retrieve or failed_ingest:
                     print(
                         "Harvesting of location %s failed. Failed to "
@@ -66,6 +64,8 @@ class Command(BaseCommand):
                         )
                     )
             except Exception as exc:
+                if options.get("traceback"):
+                    raise
                 raise CommandError(
                     "Failed to harvest location %s. Error was: %s" % (url, exc)
                 )

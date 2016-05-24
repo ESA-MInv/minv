@@ -2,28 +2,29 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
+from minv.commands import CollectionCommand
 from minv.inventory.ingest import ingest
 
 
-class Command(BaseCommand):
+class Command(CollectionCommand):
     option_list = BaseCommand.option_list + (
         make_option("-m", "--mission", dest="mission"),
         make_option("-f", "--file-type", dest="file_type"),
         make_option("-u", "--url", dest="url")
     )
 
-    args = '-m MISSION -f FILE TYPE -u URL <index-file-name> ' \
+    args = 'MISSION/FILE-TYPE -u URL <index-file-name> ' \
            '[<index-file-name> ...]'
 
     help = 'Ingest the given index files.'
 
-    def handle(self, *args, **options):
+    def handle_collection(self, collection, *args, **options):
 
         for index_file_name in args:
             try:
                 # TODO: print number of records ingested
                 ingest(
-                    options["mission"], options["file_type"], options["url"],
+                    collection.mission, collection.file_type, options["url"],
                     index_file_name
                 )
             except Exception as exc:

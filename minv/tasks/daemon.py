@@ -37,15 +37,15 @@ class Daemon(object):
 
             reader = DaemonReader()
 
-            registry.initialize(getattr(settings, 'MINV_TASK_MODULES'))
+            registry.initialize()
 
             # create executors, listener and scheduler
             self.executor_pool = ThreadPool(reader.num_workers)  # TODO: threading or process pool
             self.scheduler = Scheduler(self.on_scheduled)
             self.listener = get_listener()
 
-            self.reload_schedule()
             self.scheduler.start()
+            self.reload_schedule()
 
             while True:
                 try:

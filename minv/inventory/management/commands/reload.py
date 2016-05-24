@@ -5,39 +5,28 @@ import tempfile
 import shutil
 import glob
 import csv
-from uuid import uuid4
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from minv.commands import CollectionCommand
 from minv.inventory import models
 from minv.inventory.ingest import ingest
 from minv.utils import safe_makedirs
 
 
-class Command(BaseCommand):
+class Command(CollectionCommand):
     option_list = BaseCommand.option_list + (
-        make_option("-m", "--mission", dest="mission"),
-        make_option("-f", "--file-type", dest="file_type"),
         make_option("-u", "--url", dest="urls", action="append", default=None)
     )
 
-    args = '-m MISSION -f FILE TYPE [ -u LOCATION URL [ -u ... ] ]'
+    args = 'MISSION/FILE-TYPE [ -u LOCATION URL [ -u ... ] ]'
 
     help = ('Reload all index files for selected or all locations in the '
             'collection.')
 
-    def handle(self, *args, **options):
-        mission = options["mission"]
-        file_type = options["file_type"]
+    def handle_collection(self, collection, *args, **options):
         urls = options["urls"]
-
-        if not mission or not file_type:
-            raise CommandError("No collection specified.")
-
-        collection = models.Collection.objects.get(
-            mission=mission, file_type=file_type
-        )
 
         if urls:
             locations = [

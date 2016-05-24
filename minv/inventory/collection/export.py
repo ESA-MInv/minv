@@ -14,12 +14,14 @@ import minv
 from minv.inventory import models
 from minv.inventory.ingest import ingest
 from minv.utils import safe_makedirs
+from minv.tasks.registry import task
 
 
 class ImportException(Exception):
     pass
 
 
+@task("export")
 def export_collection(mission, file_type, filename=None,
                       configuration=True, data=True):
     """ Export the configuration and/or the data of a collection to a ZIP file.
@@ -108,6 +110,7 @@ def _export_collection_locked(collection, filename, configuration, data):
     return filename
 
 
+@task("import")
 @transaction.atomic
 def import_collection(filename, mission=None, file_type=None):
     """ Import a previously exported archive.

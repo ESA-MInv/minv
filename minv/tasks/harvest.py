@@ -11,11 +11,13 @@ import zipfile
 import re
 
 from django.utils.datastructures import SortedDict
+from django.utils.timezone import now
 
 from minv.inventory import models
 from minv.inventory.ingest import ingest
 from minv.utils import Timer, safe_makedirs
 from minv.tasks.registry import task
+from minv.tasks.api import schedule
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class RetrieveError(Exception):
 
 
 @task
-def harvest(mission, file_type, url, fail_fast=False):
+def harvest(mission, file_type, url, reschedule=False):
     """ Performs the harvesting for the specified collection and location.
     Returns
     """
@@ -37,10 +39,10 @@ def harvest(mission, file_type, url, fail_fast=False):
         mission=mission, file_type=file_type
     )
     with collection.get_lock():
-        return _harvest_locked(collection, url, fail_fast)
+        return _harvest_locked(collection, url, reschedule)
 
 
-def _harvest_locked(collection, url, fail_fast):
+def _harvest_locked(collection, url, reschedule):
     location = collection.locations.get(url=url)
 
     if location.location_type == "oads":
@@ -53,7 +55,9 @@ def _harvest_locked(collection, url, fail_fast):
         )
 
     # scan the source
+    logger.debug("Scanning location %s." % location)
     available_index_files = harvester.scan()
+    logger.debug("Successfully scanned location %s." % location)
 
     # categorize files
     inserted, updated, deleted = select_index_files(
@@ -76,8 +80,10 @@ def _harvest_locked(collection, url, fail_fast):
             harvester.retrieve(
                 join(url, index_file_name), index_file_name, pending_dir
             )
+            logger.debug("Retrieved %s." % index_file_name)
         except:
             failed_retrieve.append(index_file_name)
+            logger.debug("Failed to retrieve %s." % index_file_name)
 
     for index_file_name in itertools.chain(updated, deleted):
         # delete model
@@ -98,16 +104,33 @@ def _harvest_locked(collection, url, fail_fast):
                 collection.mission, collection.file_type, url,
                 basename(index_file_name)
             )
+            logger.debug("Ingested %s." % basename(index_file_name))
         except:
-            failed_ingest.append(index_file_name)
-            if fail_fast:
-                raise
+            failed_ingest.append(basename(index_file_name))
+            logger.debug("Failed to ingest %s." % basename(index_file_name))
 
     logger.info("Finished harvesting for %s: %s" % (collection, location))
     if failed_retrieve:
         logger.error("Failed to retrieve %s" % ", ".join(failed_retrieve))
     if failed_ingest:
         logger.error("Failed to ingest %s" % ", ".join(failed_ingest))
+
+    # if this was a scheduled harvest, reschedule it again
+    if reschedule:
+        try:
+            interval = collection.configuration.harvesting_interval
+            schedule("harvest", now() + interval, {
+                "mission": collection.mission,
+                "file_type": collection.file_type,
+                "url": location.url,
+                "reschedule": True
+            })
+        except Exception as exc:
+            logger.error(
+                "Failed to reschedule harvest for %s %s. Error was '%s'." % (
+                    collection, location, exc
+                )
+            )
 
     return failed_retrieve, failed_ingest
 
@@ -245,7 +268,45 @@ class OADSHarvester(BaseHarvester):
 
 
 class NGAHarvester(BaseHarvester):
-    pass
+    def scan(self):
+        try:
+            url = self.location.url
+            with closing(urllib2.urlopen(url, timeout=self.timeout)) as handle:
+                logger.debug("Scanning: Got response from: %s", handle.geturl())
+                index_files = [
+                    idx_file
+                    for idx_file in extract_index_hrefs(handle, handle.geturl())
+                    if RE_INDEX_FILE.match(idx_file[0])
+                ]
+        except Exception as exc:
+            logger.error("Error parsing %s: %s", url, exc)
+            raise
+
+        # TODO: filter
+        return index_files
+
+    def retrieve(self, url, file_name, target_dir):
+        path = join(target_dir, file_name)
+        tmp_path = path + ".tmp"
+        logger.debug("Retrieving %s and storing it under %s", url, path)
+        timer = Timer()
+        try:
+            with closing(urllib2.urlopen(url, timeout=self.timeout)) as fin:
+                with open(tmp_path, "wb") as fout:
+                    shutil.copyfileobj(fin, fout, 64*1024)
+                    size = fout.tell()
+            os.rename(tmp_path, path)
+        except IOError as exc:
+            logger.error("Error saving %s: %s", path, exc)
+            raise RetrieveError(str(exc))
+        except Exception as exc:
+            logger.error("Error retrieving %s: %s", url, exc)
+            raise
+        finally:
+            if isfile(tmp_path):
+                os.remove(tmp_path)
+        logger.info("'%s' -> '%s' %dB %.3fs", url, path, size, timer.stop())
+        return file_name
 
 
 def extract_index_hrefs(source, base_url=None):

@@ -1,6 +1,7 @@
 from os import rmdir
 from shutil import rmtree
 from os.path import join, exists
+import logging
 
 from django.contrib.gis.db import models
 from django.db.models.signals import post_save, post_delete
@@ -10,6 +11,8 @@ from django.utils.text import slugify
 
 from minv.inventory.collection import config
 from minv.utils import safe_makedirs, FileLock
+
+logger = logging.getLogger(__name__)
 
 
 SEARCH_FIELD_CHOICES = (
@@ -214,8 +217,21 @@ def on_collection_created(sender, instance, created, **kwargs):
 @receiver(post_delete)
 def on_collection_deleted(sender, instance, **kwargs):
     if sender is Collection:
-        rmtree(instance.data_dir)
+        try:
+            rmtree(instance.data_dir)
+        except OSError:
+            logger.error("Could not remove collection data directory %s."
+                % instance.data_dir
+            )
         # if that was the only collection with that exact mission, remove the
         # mission dir aswell
         if not Collection.objects.filter(mission=instance.mission).exists():
-            rmdir(join(settings.MINV_DATA_DIR, "collections", instance.mission))
+            mission_dir = join(
+                settings.MINV_DATA_DIR, "collections", instance.mission
+            )
+            try:
+                rmdir(mission_dir)
+            except OSError:
+                logger.error("Could not remove mission data directory %s."
+                    % mission_dir
+                )

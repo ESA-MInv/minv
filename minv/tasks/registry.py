@@ -1,4 +1,5 @@
 from django.utils.importlib import import_module
+from django.conf import settings
 
 from minv.tasks.api import monitor
 from minv.tasks import models
@@ -23,15 +24,17 @@ class Registry(object):
 
     def run(self, task, **kwargs):
         with monitor(task, **kwargs):
-            self._tasks[task](**kwargs)
+            return self._tasks[task](**kwargs)
 
     def restart(self, job_id):
         job = models.Job.objects.get(id=job_id)
         kwargs = job.get_arguments()
         with monitor(job.task, **kwargs):
-            self._tasks[job.task](**kwargs)
+            return self._tasks[job.task](**kwargs)
 
-    def initialize(self, module_list=None):
+    def initialize(self):
+        module_list = getattr(settings, 'MINV_TASK_MODULES')
+
         for module_path in module_list:
             import_module(module_path)
 

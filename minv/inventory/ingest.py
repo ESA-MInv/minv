@@ -47,7 +47,7 @@ class IngestError(Exception):
 
 
 @transaction.atomic
-def ingest(mission, file_type, url, index_file_name, fail_fast=False):
+def ingest(mission, file_type, url, index_file_name):
     """ Function to ingest an indexfile into the collection identified by
     ``mission`` and ``file_type``. The indexfile must be located in the
     ``pending`` folder of the collections data directory.
@@ -136,18 +136,20 @@ def ingest(mission, file_type, url, index_file_name, fail_fast=False):
                 record.full_clean()
                 record.save()
                 count += 1
-    except:
+    except Exception as exc:
         # move file to failed directory
         os.rename(
             join(pending_dir, index_file_name),
             join(failed_dir, index_file_name)
         )
         logger.error(
-            "Failed to ingest index file %s for %s (%s)"
-            % (index_file_name, collection, location.url)
+            "Failed to ingest index file %s for %s (%s). Error was: %s"
+            % (index_file_name, collection, location.url, exc)
         )
-        if fail_fast:
-            raise
+        raise IngestionError(
+            "Failed to ingest index file %s for %s (%s). Error was: %s"
+            % (index_file_name, collection, location.url, exc)
+        )
     else:
         # move file to ingested directory
         os.rename(

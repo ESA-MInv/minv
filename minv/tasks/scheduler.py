@@ -15,6 +15,7 @@ from threading import Thread, Lock, Condition
 from datetime import datetime, timedelta
 from functools import wraps
 import logging
+import traceback
 
 from django.utils.timezone import utc
 
@@ -163,6 +164,7 @@ class Scheduler(Thread):
         """ Remove all items from the scheduler. """
         self._items = []
         self._cond.notify()
+        logger.debug("Reset the items in the scheduler.")
 
     @locked
     def __iter__(self):
@@ -212,7 +214,15 @@ class Scheduler(Thread):
                 )
                 # temporarily release the lock while executing the callback.
                 self._lock.release()
-                self._callback(*args, **kwargs)
+                try:
+                    self._callback(*args, **kwargs)
+                except Exception as e:
+                    logger.error(
+                        "Error invoking the scheduler callback. Error was %s."
+                        % e
+                    )
+                    logger.debug(traceback.format_exc())
+                    raise
                 self._lock.acquire()
 
             # calculate the waiting time for the next

@@ -21,6 +21,7 @@ MINV_DATA_DIR = '/srv/minv'
 MINV_LOCK_DIR = '/tmp/minv/lock'
 MINV_TASK_MODULES = [
     'minv.tasks.harvest',
+    'minv.inventory.collection.export',
 ]
 
 
@@ -126,16 +127,30 @@ LOGIN_URL = '/login'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '%(levelname)s: %(message)s'
+        },
+        'verbose': {
+            'format': '[%(asctime)s][%(module)s] %(levelname)s: %(message)s'
+        }
+    },
     'handlers': {
         'file': {
             'level': 'DEBUG' if DEBUG else 'INFO',
-            'class': 'logging.FileHandler',
+            'formatter': 'verbose',
+            'class': 'logging.handlers.WatchedFileHandler',
             'filename': '/var/log/minv/minv.log',
+        },
+        'django_file': {
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'class': 'logging.handlers.WatchedFileHandler',
+            'filename': '/var/log/minv/django.log',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['django_file'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': True,
         },
