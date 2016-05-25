@@ -103,9 +103,13 @@ def search_view(request, mission, file_type):
         mission=mission, file_type=file_type
     )
 
+    available_search_fields = collection.configuration.metadata_mapping.keys()
+
     results = None
     if request.method == "POST":
-        search_form = forms.SearchForm(collection.locations.all(), request.POST)
+        search_form = forms.SearchForm(
+            collection.locations.all(), available_search_fields, request.POST
+        )
         pagination_form = forms.PaginationForm(request.POST)
         result_list_form = forms.RecordSearchResultListForm(
             collection.locations.all(), request.POST
@@ -118,6 +122,10 @@ def search_view(request, mission, file_type):
             search_data = search_form.cleaned_data
             location_ids = search_data.pop("locations", ())
 
+            footprint_or_scene_centre = search_data.pop(
+                "area_footprint_or_scene_centre", "footprint"
+            )
+
             if location_ids:
                 locations = collection.locations.filter(id__in=location_ids)
             else:
@@ -126,7 +134,8 @@ def search_view(request, mission, file_type):
             results = []
             for location in locations:
                 qs = queries.search(
-                    collection, search_data, location.records.all()
+                    collection, search_data, location.records.all(),
+                    footprint_or_scene_centre == "footprint"
                 )
                 values = qs.aggregate(
                     volume=Sum("filesize"), count=Count("filename")
@@ -134,7 +143,9 @@ def search_view(request, mission, file_type):
                 results.append((location, values))
 
     else:
-        search_form = forms.SearchForm(collection.locations.all())
+        search_form = forms.SearchForm(
+            collection.locations.all(), available_search_fields
+        )
         pagination_form = forms.PaginationForm(
             initial={'page': '1', 'records_per_page': '15'}
         )

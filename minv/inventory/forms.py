@@ -234,7 +234,7 @@ def create_formfield_for_model_field(model_field):
 
 
 class SearchForm(forms.Form):
-    def __init__(self, locations, *args, **kwargs):
+    def __init__(self, locations, available_search_fields, *args, **kwargs):
         """ Dynamically create form fields for eligible model fields.
         """
         super(SearchForm, self).__init__(*args, **kwargs)
@@ -243,16 +243,35 @@ class SearchForm(forms.Form):
             choices=[(location.id, str(location)) for location in locations],
             widget=forms.CheckboxSelectMultiple
         )
-        self.fields["area"] = BBoxField(
-            forms.FloatField, required=False,
-            widget=forms.NumberInput(attrs=float_attrs)
-        )
+
+        # area widget
+        have_footprint = "footprint" in available_search_fields
+        have_scene_centre = "scene_centre" in available_search_fields
+        if have_footprint or have_scene_centre:
+            self.fields["area"] = BBoxField(
+                forms.FloatField, required=False,
+                widget=forms.NumberInput(attrs=float_attrs)
+            )
+
+        if have_footprint and have_scene_centre:
+            self.fields["area_footprint_or_scene_centre"] = forms.ChoiceField(
+                required=False, choices=[
+                    ("footprint", "Footprint"),
+                    ("scene_centre", "Scene Centre")
+                ],
+                widget=forms.Select(attrs=attrs)
+            )
+
         for field in inventory_models.Record._meta.fields:
             name = field.name
 
             # skip fields that are treated otherwise
             if name in ("id", "location", "index_file", "scene_centre",
                         "footprint"):
+                continue
+
+            # only use fields that are configured
+            if name not in available_search_fields:
                 continue
 
             if isinstance(field, models.DateTimeField):
@@ -327,8 +346,6 @@ class AlignmentForm(forms.Form):
         self.fields["instrument"] = forms.CharField(
             required=False, widget=ClearableTextInput(attrs=attrs)
         )
-
-        available_alignment_fields
 
         for name, __ in inventory_models.ALIGNMENT_FIELD_CHOICES:
             if name in available_alignment_fields:
