@@ -122,6 +122,7 @@ def search_view(request, mission, file_type):
             search_data = search_form.cleaned_data
             location_ids = search_data.pop("locations", ())
 
+            # TODO: only scene centre??
             footprint_or_scene_centre = search_data.pop(
                 "area_footprint_or_scene_centre", "footprint"
             )
@@ -172,6 +173,7 @@ def result_list_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
+    available_search_fields = collection.configuration.metadata_mapping.keys()
 
     config = collection.configuration
     all_choices = dict((("checksum", "Checksum"),) + models.SEARCH_FIELD_CHOICES)
@@ -185,7 +187,9 @@ def result_list_view(request, mission, file_type):
     result_list = None
     result_list_location = None
     if request.method == "POST":
-        search_form = forms.SearchForm(collection.locations.all(), request.POST)
+        search_form = search_form = forms.SearchForm(
+            collection.locations.all(), available_search_fields, request.POST
+        )
         pagination_form = forms.PaginationForm(request.POST)
         result_list_form = forms.RecordSearchResultListForm(
             collection.locations.all(), request.POST
@@ -196,16 +200,24 @@ def result_list_view(request, mission, file_type):
             result_list_form.is_valid()
         )
 
+        print search_form.is_valid(), search_form.errors
+
         if forms_valid:
             search_data = search_form.cleaned_data
             result_list_location_id = result_list_form.cleaned_data[
                 "result_list_location"
             ]
 
+            # TODO: only scene centre??
+            footprint_or_scene_centre = search_data.pop(
+                "area_footprint_or_scene_centre", "footprint"
+            )
+
             location = collection.locations.get(id=result_list_location_id)
 
             qs = queries.search(
-                collection, search_data, location.records.all()
+                collection, search_data, location.records.all(),
+                footprint_or_scene_centre == "footprint"
             )
 
             sort = result_list_form.cleaned_data.pop("sort", None)
@@ -243,7 +255,9 @@ def result_list_view(request, mission, file_type):
                     )
 
     else:
-        search_form = forms.SearchForm(collection.locations.all())
+        search_form = forms.SearchForm(
+            collection.locations.all(), available_search_fields
+        )
         pagination_form = forms.PaginationForm(
             initial={'page': '1', 'records_per_page': '15'}
         )
