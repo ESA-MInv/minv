@@ -4,10 +4,11 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.utils import IntegrityError
 
+from minv.commands import MinvCommand
 from minv.inventory import models
 
 
-class Command(BaseCommand):
+class Command(MinvCommand):
     option_list = BaseCommand.option_list + (
         make_option("-c", "--create",
             action="store_const", dest="mode", const="create", default="create"
@@ -18,8 +19,6 @@ class Command(BaseCommand):
         make_option("-l", "--list",
             action="store_const", dest="mode", const="list"
         ),
-        make_option("-m", "--mission", dest="mission"),
-        make_option("-f", "--file-type", dest="file_type"),
         make_option("-o", "--oads",
             action="append", dest="oads_list", default=None
         ),
@@ -40,18 +39,23 @@ class Command(BaseCommand):
     help = 'Create or delete collections.'
 
     @transaction.atomic
-    def handle(self, *args, **options):
+    def handle_authorized(self, *args, **options):
         mode = options["mode"] or "create"
 
-        mission = options["mission"]
-        file_type = options["file_type"]
+        mission = None
+        file_type = None
 
         if mode in ("create", "delete"):
-            if not mission:
-                raise CommandError("Missing mandatory parameter 'mission'.")
+            if not args:
+                raise CommandError(
+                    "For mode create and delete a collection identifier is "
+                    "necessary."
+                )
 
-            if not file_type:
-                raise CommandError("Missing mandatory parameter 'file-type'.")
+            try:
+                mission, file_type = args[0].split("/")
+            except:
+                raise CommandError("Invalid Collection specifier '%s'" % args[0])
 
         if mode == "create":
             oads_list = options["oads_list"] or []
