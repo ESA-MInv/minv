@@ -1,11 +1,12 @@
 from django.template.loader import render_to_string
 from django.db import connection
 from django.db.models import Min, Count
+from django.contrib.gis.geos import Polygon
 
 from minv.inventory import models
 
 
-def search(collection, filters=None, queryset=None):
+def search(collection, filters=None, queryset=None, area_is_footprint=True):
     """ Performs a search for :class:`Record`s on the specified
     :class:`Collection` with the given filters applied.
 
@@ -44,9 +45,17 @@ def search(collection, filters=None, queryset=None):
                     filter_ = {
                         "%s__lte" % key_low: high, "%s__gte" % key_high: low
                     }
+                elif len(value) == 4:
+                    if area_is_footprint:
+                        filter_ = {
+                            "footprint__intersects": Polygon.from_bbox(value)
+                        }
+                    else:
+                        filter_ = {
+                            "scene_centre__within": Polygon.from_bbox(value)
+                        }
                 else:
-                    # TODO implement area filtering
-                    filter_ = {}
+                    raise ValueError("Invalid parameter %s: %r" % (key, value))
 
             else:
                 filter_ = {key: value}
