@@ -196,7 +196,7 @@ class Command(MinvCommand):
         self._backup_config(path)
 
         # store new config
-        shutil.move(import_path, path)
+        shutil.copy2(import_path, path)
 
         if collection:
             print(
