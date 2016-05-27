@@ -3,6 +3,7 @@ from os.path import join
 from ConfigParser import NoOptionError, NoSectionError, RawConfigParser
 
 from django.conf import settings
+from django.utils.datastructures import SortedDict
 
 
 class ConfigurationErrors(Exception):
@@ -63,6 +64,8 @@ class Option(property):
             raise
 
         if self.separator is not None:
+            if raw_value is None:
+                return []
             return map(self.type, raw_value.split(self.separator))
 
         elif self.type:
@@ -199,17 +202,46 @@ def try_or_none(type_):
     return wrapper
 
 
-class DatabaseReader(Reader):
-    section("database")
+class GlobalReader(Reader):
+    section = "database"
     host = Option(default="")
     port = Option(type=int, default=5432)
     database = Option(default="minv")
     user = Option(default="minv")
     password = Option(required=True)
 
-
-class DaemonReader(Reader):
-    section("daemon")
+    section = "daemon"
     socket_filename = Option(default=None)
-    port = Option(type=try_or_none(int), default=None)
+    daemon_port = Option(type=try_or_none(int), default=None)
     num_workers = Option(type=int, default=8)
+
+
+def check_global_configuration(reader):
+    keys = (
+        "host", "port", "database", "user", "password",
+        "socket_filename", "daemon_port", "num_workers"
+    )
+    errors = []
+    for key in keys:
+        try:
+            getattr(reader, key)
+        except Exception as exc:
+            errors.append("%s: %s" % (key, exc))
+
+    return errors
+
+
+def global_configuration_changes(old, new):
+    changes = SortedDict()
+    database_keys = ("host", "port", "database", "user", "password")
+    daemon_keys = ("socket_filename", "daemon_port", "num_workers")
+
+    for key in database_keys:
+        if getattr(old, key) != getattr(new, key):
+            changes["database.%s" % key] = (getattr(old, key), getattr(new, key))
+
+    for key in daemon_keys:
+        if getattr(old, key) != getattr(new, key):
+            changes["daemon.%s" % key] = (getattr(old, key), getattr(new, key))
+
+    return changes
