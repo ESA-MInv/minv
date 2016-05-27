@@ -5,12 +5,14 @@ from os.path import basename, exists, join, dirname
 from datetime import datetime
 from urlparse import urlparse
 import logging
+import traceback
 
 from django.db import transaction
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import utc
 from django.contrib.gis.db.models import (
-    DateTimeField, CharField, MultiPolygonField, PointField
+    DateTimeField, CharField, MultiPolygonField, PointField, IntegerField,
+    FloatField
 )
 from django.contrib.gis.geos import MultiPolygon, Polygon, Point
 
@@ -22,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 def parse_index_time(value):
+    if not value:
+        return None
     return datetime.strptime(value, "%Y%m%d-%H%M%S").replace(tzinfo=utc)
 
 
@@ -39,7 +43,21 @@ def parse_footprint(value):
 
 
 def parse_point(value):
-    return Point(float(v) for v in value.split(" "))
+    if not value:
+        return None
+    return Point([float(v) for v in value.split(" ")])
+
+
+def parse_integer(value):
+    if not value:
+        return None
+    return int(value)
+
+
+def parse_float(value):
+    if not value:
+        return None
+    return float(value)
 
 
 class IngestError(Exception):
@@ -112,6 +130,10 @@ def ingest(mission, file_type, url, index_file_name):
                 preparations[target] = parse_footprint
             elif isinstance(field, PointField):
                 preparations[target] = parse_point
+            elif isinstance(field, IntegerField):
+                preparations[target] = parse_integer
+            elif isinstance(field, FloatField):
+                preparations[target] = parse_float
 
         count = 0
         with open(path) as f:
@@ -146,6 +168,7 @@ def ingest(mission, file_type, url, index_file_name):
             "Failed to ingest index file %s for %s (%s). Error was: %s"
             % (index_file_name, collection, location.url, exc)
         )
+        logger.debug(traceback.format_exc())
         raise IngestionError(
             "Failed to ingest index file %s for %s (%s). Error was: %s"
             % (index_file_name, collection, location.url, exc)
