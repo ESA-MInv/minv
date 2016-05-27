@@ -8,6 +8,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.conf import settings
 from django.utils.text import slugify
+from django.template.loader import render_to_string
 
 from minv.inventory.collection import config
 from minv.utils import safe_makedirs, FileLock
@@ -208,8 +209,7 @@ def on_collection_created(sender, instance, created, **kwargs):
 
         if not exists(join(instance.config_dir, "collection.conf")):
             with open(join(instance.config_dir, "collection.conf"), "w") as f:
-                f.write("[inventory]")
-                # TODO: default values for configuration
+                f.write(render_to_string("inventory/collection/collection.conf"))
 
         safe_makedirs(instance.data_dir)
 
