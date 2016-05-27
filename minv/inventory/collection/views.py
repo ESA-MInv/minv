@@ -19,7 +19,7 @@ from minv.inventory import queries
 from minv.inventory.collection.export import (
     export_collection, list_exports
 )
-from minv.utils import get_or_none
+from minv.utils import get_or_none, timedelta_to_duration
 
 
 def check_collection(view):
@@ -641,8 +641,12 @@ def configuration_view(request, mission, file_type):
 
             configuration_form = forms.CollectionConfigurationForm(
                 initial={
-                    "export_interval": config.export_interval,
-                    "harvest_interval": config.harvest_interval,
+                    "export_interval": timedelta_to_duration(
+                        config.export_interval
+                    ),
+                    "harvest_interval": timedelta_to_duration(
+                        config.harvest_interval
+                    ),
                     "available_result_list_fields":
                         config.available_result_list_fields,
                     "available_alignment_fields":
@@ -657,8 +661,12 @@ def configuration_view(request, mission, file_type):
     else:
         configuration_form = forms.CollectionConfigurationForm(
             initial={
-                "export_interval": config.export_interval,
-                "harvest_interval": config.harvest_interval,
+                "export_interval": timedelta_to_duration(
+                    config.export_interval
+                ),
+                "harvest_interval": timedelta_to_duration(
+                    config.harvest_interval
+                ),
                 "available_result_list_fields":
                     config.available_result_list_fields,
                 "available_alignment_fields":

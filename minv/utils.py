@@ -88,6 +88,36 @@ def total_seconds(tdelta):
     return 1e-6*tdelta.microseconds + tdelta.seconds + 8.64e+4*tdelta.days
 
 
+# adapted from https://gist.github.com/thatalextaylor/7408395
+
+def timedelta_to_duration(tdelta):
+    seconds = total_seconds(tdelta)
+    sign_string = '-' if seconds < 0 else ''
+    seconds = abs(int(seconds))
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+
+    parts = [sign_string, "P"]
+
+    if days > 0:
+        parts.append("%sD" % days)
+
+    if hours or minutes or seconds:
+        parts.append("T")
+
+        if hours:
+            parts.append("%sH" % hours)
+
+        if minutes:
+            parts.append("%sM" % minutes)
+
+        if seconds:
+            parts.append("%sS" % seconds)
+
+    return "".join(parts)
+
+
 class FileLockException(Exception):
     """ File lock error exception. """
     pass
