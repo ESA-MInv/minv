@@ -7,9 +7,7 @@ import errno
 from multiprocessing.connection import Listener, Client
 from multiprocessing.pool import ThreadPool
 
-from django.conf import settings
-
-from minv.config import DaemonReader
+from minv.config import GlobalReader
 from minv.tasks.scheduler import Scheduler
 from minv.tasks import models
 from minv.tasks.registry import registry
@@ -35,12 +33,12 @@ class Daemon(object):
             signal(SIGINT, self.shutdown)
             signal(SIGTERM, self.terminate)
 
-            reader = DaemonReader()
+            reader = GlobalReader()
 
             registry.initialize()
 
             # create executors, listener and scheduler
-            self.executor_pool = ThreadPool(reader.num_workers)  # TODO: threading or process pool
+            self.executor_pool = ThreadPool(1)
             self.scheduler = Scheduler(self.on_scheduled)
             self.listener = get_listener()
 
@@ -106,10 +104,10 @@ class Daemon(object):
 
 def get_socket_config():
     """ Get path to the harvesing socket file. """
-    reader = DaemonReader()
+    reader = GlobalReader()
 
-    if reader.port is not None:
-        return ("localhost", reader.port), "AF_INET"
+    if reader.daemon_port is not None:
+        return ("localhost", reader.daemon_port), "AF_INET"
 
     socket_filename = reader.socket_filename
 
