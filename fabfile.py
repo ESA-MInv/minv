@@ -32,6 +32,17 @@ def build(version=None):
             ))
 
 
+def uninstall():
+    sudo("dropdb template_postgis || true", user="postgres")
+    sudo("dropdb minv || true", user="postgres")
+    sudo("dropuser minv || true", user="postgres")
+
+    sudo(
+        "yum remove -y "
+        "postgresql-server postgis proj geos python-psycopg2 Django minv"
+    )
+
+
 def reset_db():
     sudo("dropdb template_postgis || true", user="postgres")
     sudo("dropdb minv || true", user="postgres")
@@ -44,9 +55,18 @@ def reset_db():
     )
 
 
-def deploy(uninstall=False, restart=True, version=None):
+def upload(version=None):
     version = version or minv.__version__
     put(join(env.builder_path, "build/RPMS/minv-%s-1.noarch.rpm" % version), "")
+    put(join(env.ink_path, "geos-3.3.8-2.el6.x86_64.rpm"), "")
+    put(join(env.ink_path, "postgis-1.5.8-1.el6.x86_64.rpm"), "")
+    put(join(env.ink_path, "proj-4.8.0-3.el6.x86_64.rpm"), "")
+
+
+def deploy(uninstall=False, restart=True, version=None):
+    version = version or minv.__version__
+    upload(version)
+
     if uninstall:
         sudo("yum remove -y minv")
     sudo("yum install -y minv-%s-1.noarch.rpm" % version)
