@@ -32,7 +32,7 @@ class MinvCommand(BaseCommand):
     def get_user_name(self):
         """ Get the user name (behind SUDO).
         """
-        return os.environ.get("USER")
+        return os.environ.get("SUDO_USER")
 
     def authorize(self, require_group):
         """ Method to authorize a user
