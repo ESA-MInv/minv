@@ -1,7 +1,13 @@
+import os
+import grp
+import logging
+
 from django.core.management.base import BaseCommand, CommandError
 
 from minv.tasks.registry import registry
 from minv.inventory import models
+
+logger = logging.getLogger(__name__)
 
 
 class AuthorizationError(Exception):
@@ -11,25 +17,70 @@ class AuthorizationError(Exception):
 class MinvCommand(BaseCommand):
     require_group = None
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args, **options):
         registry.initialize()
+        self.verbosity = options.get("verbosity", 1)
         if self.require_group:
-            # TODO: see if the user is in the right group
+            self.authorize(self.require_group)
 
-            # TODO: perform check
-            self.authorize()
+        self.info("Running command '%s'" % self.get_command_name())
+        return self.handle_authorized(*args, **options)
 
-        return self.handle_authorized(*args, **kwargs)
+    def get_command_name(self):
+        return (self.__class__.__module__).rpartition(".")[-1]
+
+    def get_user_name(self):
+        """ Get the user name (behind SUDO).
+        """
+        return os.environ.get("USER")
 
     def authorize(self, require_group):
-        # TODO: perform check
+        """ Method to authorize a user
+        """
 
-        grp_id = grp.getgrnam(self.require_group).gr_id
-        
-        pass
+        username = self.get_user_name()
+        self.debug("Authorizing user %s. Required group: %s" % (
+            username, require_group)
+        )
+        group = grp.getgrnam(self.require_group)
 
-    def handle_authorized(self, *args, **kwargs):
+        if not self.get_user_name() in group[3]:
+            self.warning(
+                "User %s was not authorized to run the command '%s'."
+                % (username, self.get_command_name())
+            )
+            raise CommandError(
+                "User %s is not authorized to run this command."
+                % (self.get_command_name())
+            )
+        else:
+            self.info(
+                "User %s is authorized to run the command '%s'."
+                % (username, self.get_command_name())
+            )
+
+    def handle_authorized(self, *args, **options):
         raise NotImplementedError
+
+    def debug(self, message):
+        logger.debug(message)
+        if self.verbosity > 1:
+            print(message)
+
+    def info(self, message):
+        logger.info(message)
+        if self.verbosity:
+            print(message)
+
+    def warning(self, message):
+        logger.warning(message)
+        if self.verbosity:
+            print(message)
+
+    def error(self, message):
+        logger.error(message)
+        if self.verbosity:
+            print(message)
 
 
 class CollectionCommand(MinvCommand):

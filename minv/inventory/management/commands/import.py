@@ -18,9 +18,14 @@ class Command(MinvCommand):
         )
     )
 
+    require_group = "minv_g_app_engineers"
+
     args = '[ MISSION/FILE-TYPE ] <filename>'
 
-    help = 'Import the specified archive.'
+    help = (
+        'Import the specified archive. '
+        'Requires membership of group "minv_g_app_engineers".'
+    )
 
     def handle_authorized(self, *args, **options):
         if len(args) > 2:

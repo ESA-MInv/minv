@@ -17,11 +17,16 @@ class Command(CollectionCommand):
         ),
     )
 
+    require_group = "minv_g_operators"
+
     args = (
         'MISSION/FILE-TYPE ( -u <location-url> [ -u <location-url> ... ] | -a )'
     )
 
-    help = 'Harvest the whole collection or specific locations of a collection.'
+    help = (
+        'Harvest the whole collection or specific locations of a collection. '
+        'Requires membership of group "minv_g_operators".'
+    )
 
     def handle_collection(self, collection, *args, **options):
         if not options["urls"] and not options["all"]:

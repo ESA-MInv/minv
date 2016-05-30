@@ -13,10 +13,15 @@ class Command(CollectionCommand):
         make_option("-u", "--url", dest="url")
     )
 
+    require_group = "minv_g_operators"
+
     args = 'MISSION/FILE-TYPE -u URL <index-file-name> ' \
            '[<index-file-name> ...]'
 
-    help = 'Ingest the given index files.'
+    help = (
+        'Ingest the given index files. '
+        'Requires membership of group "minv_g_operators".'
+    )
 
     def handle_collection(self, collection, *args, **options):
 

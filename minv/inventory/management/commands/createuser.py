@@ -5,17 +5,24 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.contrib.auth import models
 
+from minv.commands import MinvCommand
 
-class Command(BaseCommand):
+
+class Command(MinvCommand):
     option_list = BaseCommand.option_list + (
         make_option("-g", "--group", dest="groups",
             action="append", default=None
         ),
     )
 
+    require_group = "minv_g_app_administrators"
+
     args = '-g <group> [ -g <group> ... ] <username>'
 
-    help = 'Create users for the Web interface.'
+    help = (
+        'Create users for the Web interface. '
+        'Requires membership of group "minv_g_app_administrators".'
+    )
 
     @transaction.atomic
     def handle(self, *args, **options):

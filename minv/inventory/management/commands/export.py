@@ -23,11 +23,16 @@ class Command(CollectionCommand):
         )
     )
 
+    require_group = "minv_g_app_engineers"
+
     args = 'MISSION/FILE-TYPE [ -o <export-filename> ] ' \
            '[ --configuration | --no-configuration ] ' \
            '[ --data | --no-data ]'
 
-    help = 'Export the configuration and/or data of the specified collection.'
+    help = (
+        'Export the configuration and/or data of the specified collection. '
+        'Requires membership of group "minv_g_app_engineers".'
+    )
 
     def handle_collection(self, collection, *args, **options):
         output = options["output"]

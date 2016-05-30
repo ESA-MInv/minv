@@ -36,6 +36,8 @@ class Command(MinvCommand):
         )
     )
 
+    require_group = "minv_g_operators"
+
     args = (
         '-a | ( MISSION/FILE-TYPE [ -u <url> ] ) '
         '[ -n | -i <duration-string> ]'
@@ -44,7 +46,8 @@ class Command(MinvCommand):
     help = (
         'Schedule the harvesting of a collections harvesting locations. '
         'By default the jobs are scheduled in the time specified in the '
-        'collections "harvesting_interval" configuration.'
+        'collections "harvesting_interval" configuration. '
+        'Requires membership of group "minv_g_operators".'
     )
 
     @transaction.atomic

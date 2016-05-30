@@ -17,11 +17,16 @@ class Command(CollectionCommand):
         ),
     )
 
+    require_group = "minv_g_app_engineers"
+
     args = (
         'MISSION/FILE-TYPE ( -u <location-url> [ -u <location-url> ... ] | -a )'
     )
 
-    help = 'Clear the harvested data from the specified locations.'
+    help = (
+        'Clear the harvested data from the specified locations. '
+        'Requires membership of group "minv_g_app_engineers".'
+    )
 
     def handle_collection(self, collection, *args, **options):
         if not options["urls"] and not options["all"]:

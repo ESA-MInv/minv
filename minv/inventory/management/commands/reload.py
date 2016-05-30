@@ -20,10 +20,14 @@ class Command(CollectionCommand):
         make_option("-u", "--url", dest="urls", action="append", default=None)
     )
 
+    require_group = "minv_g_operators"
+
     args = 'MISSION/FILE-TYPE [ -u LOCATION URL [ -u ... ] ]'
 
-    help = ('Reload all index files for selected or all locations in the '
-            'collection.')
+    help = (
+        'Reload all index files for selected or all locations in the '
+        'collection. Requires membership of group "minv_g_operators".'
+    )
 
     def handle_collection(self, collection, *args, **options):
         urls = options["urls"]

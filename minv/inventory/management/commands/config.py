@@ -43,9 +43,17 @@ class Command(MinvCommand):
         make_option("-c", "--check",
             action="store_const", dest="mode", const="check"
         ),
-        # make_option("-r", "--restore",
-        #     action="store_const", dest="mode", const="restore"
-        # ),
+    )
+
+    require_group = "minv_g_app_engineers"
+
+    args = (
+        '[ -g | MISSION/FILE-TYPE ] [ -e | -i | -c ]'
+    )
+
+    help = (
+        'Create or delete collections. '
+        'Requires membership of group "minv_g_app_engineers".'
     )
 
     def handle_authorized(self, *args, **options):
@@ -95,7 +103,7 @@ class Command(MinvCommand):
             errors = check_global_configuration(reader)
 
         if errors:
-            print(
+            self.error(
                 "Configuration contains errors:\n   - %s"
                 % ("\n   - ".join(errors))
             )
@@ -112,7 +120,7 @@ class Command(MinvCommand):
             changes = global_configuration_changes(old, new)
 
         if changes:
-            print(
+            self.info(
                 "Detected changes in the configuration:\n   - %s"
                 % ("\n   - ".join(
                     "%s: %s --> %s" % (field, change[0], change[1])
@@ -146,7 +154,7 @@ class Command(MinvCommand):
             root, timestr, ext
         )
         shutil.move(path, backup_path)
-        print("Backed up old configuration at '%s'" % backup_path)
+        self.info("Backed up old configuration at '%s'" % backup_path)
 
     def handle_edit(self, collection=None):
         if collection:
@@ -173,12 +181,12 @@ class Command(MinvCommand):
         shutil.move(copy_path, path)
 
         if collection:
-            print(
+            self.info(
                 "Successfully edited configuration for collection %s."
                 % collection
             )
         else:
-            print "Successfully edited global configuration."
+            self.info("Successfully edited global configuration.")
 
     def handle_import(self, import_path, collection=None):
         if collection:
@@ -199,13 +207,14 @@ class Command(MinvCommand):
         shutil.copy2(import_path, path)
 
         if collection:
-            print(
+            self.info(
                 "Successfully imported configuration for collection %s from %s."
                 % (collection, import_path)
             )
         else:
-            print "Successfully imported global configuration file from %s." % (
-                import_path
+            self.info(
+                "Successfully imported global configuration file from %s."
+                % (import_path)
             )
 
     def handle_check(self, collection=None):
@@ -218,6 +227,8 @@ class Command(MinvCommand):
             raise CommandError("Check for configuration file %s failed" % path)
 
         if collection:
-            print "Check of configuration for collection %s passed." % collection
+            self.info(
+                "Check of configuration for collection %s passed." % collection
+            )
         else:
-            print "Check of global configuration passed."
+            self.info("Check of global configuration passed.")

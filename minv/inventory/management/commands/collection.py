@@ -30,13 +30,18 @@ class Command(MinvCommand):
         )
     )
 
+    require_group = "minv_g_app_engineers"
+
     args = (
-        '-m MISSION -f FILE TYPE [-c | -d | -l] '
-        '[-o <oads-url> [-o <oads-url> ... ]] '
-        '[-n <nga-url> [-n <nga-url> ... ]] '
+        '-m MISSION/FILE-TYPE [ -c | -d | -l ] '
+        '[ -o <oads-url> [ -o <oads-url> ... ]] '
+        '[ -n <nga-url> [ -n <nga-url> ... ]] '
     )
 
-    help = 'Create or delete collections.'
+    help = (
+        'Create or delete collections. '
+        'Requires membership of group "minv_g_app_engineers".'
+    )
 
     @transaction.atomic
     def handle_authorized(self, *args, **options):
