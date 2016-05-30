@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 
-from minv.config import DatabaseReader
+from minv.config import GlobalReader
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -21,6 +21,7 @@ MINV_DATA_DIR = '/srv/minv'
 MINV_LOCK_DIR = '/tmp/minv/lock'
 MINV_TASK_MODULES = [
     'minv.tasks.harvest',
+    'minv.inventory.collection.export',
 ]
 
 
@@ -76,7 +77,7 @@ WSGI_APPLICATION = '{{ project_name }}.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
-reader = DatabaseReader(os.path.join(MINV_CONFIG_DIR, 'minv.conf'))
+reader = GlobalReader(os.path.join(MINV_CONFIG_DIR, 'minv.conf'))
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
@@ -124,16 +125,30 @@ LOGIN_URL = '/login'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '%(levelname)s: %(message)s'
+        },
+        'verbose': {
+            'format': '[%(asctime)s][%(module)s] %(levelname)s: %(message)s'
+        }
+    },
     'handlers': {
         'file': {
             'level': 'DEBUG' if DEBUG else 'INFO',
-            'class': 'logging.FileHandler',
+            'formatter': 'verbose',
+            'class': 'logging.handlers.WatchedFileHandler',
             'filename': '/var/log/minv/minv.log',
+        },
+        'django_file': {
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'class': 'logging.handlers.WatchedFileHandler',
+            'filename': '/var/log/minv/django.log',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['django_file'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': True,
         },
