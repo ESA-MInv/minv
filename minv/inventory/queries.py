@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from django.template.loader import render_to_string
 from django.db import connection
 from django.db.models import Min, Count
@@ -26,21 +28,40 @@ def search(collection, filters=None, queryset=None, area_is_footprint=True):
 
     if filters:
         for key, value in filters.items():
+
             if value is None or value == "":
                 continue
             if key == "locations":
                 if not value:
                     continue
                 filter_ = {"location__in": value}
+
+            elif isinstance(value, datetime):
+                low = value
+                high = low + timedelta(days=1)
+                if key == "acquisition_date":
+                    if key == "acquisition_date":
+                        key_low = "begin_time"
+                        key_high = "end_time"
+                    else:
+                        key_low = key
+                        key_high = key
+
+                filter_ = {
+                    "%s__lt" % key_low: high, "%s__gte" % key_high: low
+                }
+
             elif isinstance(value, list):
                 if len(value) == 2:
                     low, high = value
                     if key == "acquisition_date":
-                        key_low = "begin_date"
-                        key_high = "end_date"
+                        key_low = "begin_time"
+                        key_high = "end_time"
                     else:
                         key_low = key
                         key_high = key
+
+                    print key_low, key_high
 
                     filter_ = {
                         "%s__lte" % key_low: high, "%s__gte" % key_high: low
