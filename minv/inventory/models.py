@@ -153,7 +153,7 @@ class Record(models.Model):
     platform_serial_identifier = models.CharField(max_length=256, **optional)
     mission_phase = models.CharField(max_length=256, **optional)
     operational_mode = models.CharField(max_length=64, **optional)
-    swath = models.IntegerField(**optional)
+    swath = models.CharField(max_length=64, **optional)
     instrument = models.CharField(max_length=256, **optional)
     product_id = models.CharField(max_length=1024, **optional)
     begin_time = models.DateTimeField(**optional)
