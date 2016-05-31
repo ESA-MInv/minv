@@ -1,23 +1,10 @@
-from optparse import make_option
-
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from minv.commands import MinvCommand
 from minv.tasks.registry import registry
 
 
 class Command(MinvCommand):
-    option_list = BaseCommand.option_list + (
-        make_option("-m", "--mission", dest="mission",
-            help="Optional. The 'mission' of the to be imported collection. "
-                 "By default the 'mission' is extracted from the archive."
-        ),
-        make_option("-f", "--file-type", dest="file_type",
-            help="Optional. The 'file type' of the to be imported collection. "
-                 "By default the 'file type' is extracted from the archive."
-        )
-    )
-
     require_group = "minv_g_app_engineers"
 
     args = '[ MISSION/FILE-TYPE ] <filename>'

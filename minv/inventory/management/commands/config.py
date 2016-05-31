@@ -52,7 +52,7 @@ class Command(MinvCommand):
     )
 
     help = (
-        'Create or delete collections. '
+        'Edit, check and import configuration for collections or the system. '
         'Requires membership of group "minv_g_app_engineers".'
     )
 

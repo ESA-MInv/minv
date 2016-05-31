@@ -11,35 +11,43 @@ from minv.inventory import models
 class Command(MinvCommand):
     option_list = BaseCommand.option_list + (
         make_option("-c", "--create",
-            action="store_const", dest="mode", const="create", default="create"
+            action="store_const", dest="mode", const="create", default="create",
+            help="Set the mode to 'create' (the default)."
         ),
         make_option("-d", "--delete",
-            action="store_const", dest="mode", const="delete"
+            action="store_const", dest="mode", const="delete",
+            help="Set the mode to 'delete'."
         ),
         make_option("-l", "--list",
-            action="store_const", dest="mode", const="list"
+            action="store_const", dest="mode", const="list",
+            help="Set the mode to 'list'."
         ),
         make_option("-o", "--oads",
-            action="append", dest="oads_list", default=None
+            action="append", dest="oads_list", default=None,
+            help=(
+                "For mode 'create' only. Define a new OADS url for the new "
+                "collection."
+            )
         ),
         make_option("-n", "--nga",
-            action="append", dest="nga_list", default=None
-        ),
-        make_option("-p", "--purge",
-            action="store_true", default=False
+            action="append", dest="nga_list", default=None,
+            help=(
+                "For mode 'create' only. Define a new ngA url for the new "
+                "collection."
+            )
         )
     )
 
     require_group = "minv_g_app_engineers"
 
     args = (
-        '-m MISSION/FILE-TYPE [ -c | -d | -l ] '
+        'MISSION/FILE-TYPE [ -c | -d | -l ] '
         '[ -o <oads-url> [ -o <oads-url> ... ]] '
         '[ -n <nga-url> [ -n <nga-url> ... ]] '
     )
 
     help = (
-        'Create or delete collections. '
+        'Create or delete or list collections. '
         'Requires membership of group "minv_g_app_engineers".'
     )
 

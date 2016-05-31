@@ -11,7 +11,13 @@ from minv.commands import MinvCommand
 class Command(MinvCommand):
     option_list = BaseCommand.option_list + (
         make_option("-g", "--group", dest="groups",
-            action="append", default=None
+            action="append", default=None,
+            help=(
+                "Define a group that the new user shall be included in. "
+                "Available groups are: minv_g_app_engineers, "
+                "minv_g_app_administrators, minv_g_operators, and "
+                "minv_g_security_engineers."
+            )
         ),
     )
 

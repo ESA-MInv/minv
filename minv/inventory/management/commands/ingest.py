@@ -8,9 +8,9 @@ from minv.inventory.ingest import ingest
 
 class Command(CollectionCommand):
     option_list = BaseCommand.option_list + (
-        make_option("-m", "--mission", dest="mission"),
-        make_option("-f", "--file-type", dest="file_type"),
-        make_option("-u", "--url", dest="url")
+        make_option("-u", "--url", dest="url",
+            help="The associated harvesting location."
+        ),
     )
 
     require_group = "minv_g_operators"
@@ -24,7 +24,6 @@ class Command(CollectionCommand):
     )
 
     def handle_collection(self, collection, *args, **options):
-
         for index_file_name in args:
             try:
                 # TODO: print number of records ingested

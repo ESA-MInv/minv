@@ -17,7 +17,7 @@ from minv.utils import safe_makedirs
 
 class Command(CollectionCommand):
     option_list = BaseCommand.option_list + (
-        make_option("-u", "--url", dest="urls", action="append", default=None)
+        make_option("-u", "--url", dest="urls", action="append", default=None),
     )
 
     require_group = "minv_g_operators"
@@ -91,7 +91,7 @@ class Command(CollectionCommand):
             for path in glob.iglob(join(pending_dir, "*")):
                 ingest(
                     collection.mission, collection.file_type, location.url,
-                    basename(path), fail_fast=True
+                    basename(path)
                 )
 
             # restore annotations and remove temporary file

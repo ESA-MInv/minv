@@ -8,18 +8,25 @@ from minv.tasks.registry import registry
 
 class Command(CollectionCommand):
     option_list = BaseCommand.option_list + (
-        make_option("-o", "--output", dest="output", default=None),
+        make_option("-o", "--output", dest="output",
+            default=None,
+            help="Define the output filename. Mandatory."
+        ),
         make_option("--configuration", dest="configuration",
-            action="store_true", default=True
+            action="store_true", default=True,
+            help="Export the configuration. This is the default."
         ),
         make_option("--no-configuration", dest="configuration",
-            action="store_false", default=True
+            action="store_false", default=True,
+            help="Do not export the configuration."
         ),
         make_option("--data", dest="data",
-            action="store_true", default=True
+            action="store_true", default=True,
+            help="Export the data. This is the default."
         ),
         make_option("--no-data", dest="data",
-            action="store_false", default=True
+            action="store_false", default=True,
+            help="Do not export the data."
         )
     )
 
