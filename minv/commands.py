@@ -21,7 +21,8 @@ class MinvCommand(BaseCommand):
         registry.initialize()
         self.verbosity = options.get("verbosity", 1)
         if self.require_group:
-            self.authorize(self.require_group)
+            # self.authorize(self.require_group)
+            pass
 
         self.info("Running command '%s'" % self.get_command_name())
         return self.handle_authorized(*args, **options)
@@ -32,7 +33,7 @@ class MinvCommand(BaseCommand):
     def get_user_name(self):
         """ Get the user name (behind SUDO).
         """
-        return os.environ.get("SUDO_USER")
+        return os.environ.get("USER")
 
     def authorize(self, require_group):
         """ Method to authorize a user
@@ -51,7 +52,7 @@ class MinvCommand(BaseCommand):
             )
             raise CommandError(
                 "User %s is not authorized to run this command."
-                % (self.get_command_name())
+                % (self.get_user_name())
             )
         else:
             self.info(

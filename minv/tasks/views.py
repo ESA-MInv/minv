@@ -66,6 +66,10 @@ def job_view(request, job_id):
                 job.full_clean()
                 job.save()
                 messages.info(request, "Job '%s' restarted." % job)
+
+                # TODO: actually restart job
+
+                return redirect("tasks:job", job_id=job_id)
             elif action == "abort":
                 if job.status != "running":
                     messages.error(request, "Job '%s' was not running." % job)
@@ -75,10 +79,14 @@ def job_view(request, job_id):
                     job.full_clean()
                     job.save()
                     messages.info(request, "Job '%s' aborted." % job)
+
+                    # TODO: actually abort
+
+                return redirect("tasks:job", job_id=job_id)
             elif action == "remove":
                 messages.info(request, "Job '%s' removed." % job)
                 job.delete()
-                return redirect("inventory:tasks:job-list")
+                return redirect("tasks:job-list")
 
     else:
         form = forms.JobActionForm()
