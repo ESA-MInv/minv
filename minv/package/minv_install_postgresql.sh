@@ -16,7 +16,7 @@ for MInv.
 EOF
 }
 
-while [[ $# > 1 ]] ; do
+while [[ $# > 0 ]] ; do
     key="$1"
     case $key in
         -u|--user)
@@ -43,6 +43,7 @@ while [[ $# > 1 ]] ; do
 done
 
 read -s -p "Enter Password: " password
+echo
 read -s -p "Re-Enter Password: " pw_confirm
 
 [ "$password" == "$pw_confirm" ] || {
