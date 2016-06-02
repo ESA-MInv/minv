@@ -6,7 +6,7 @@ import shutil
 import glob
 import csv
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from minv.commands import CollectionCommand
@@ -17,12 +17,18 @@ from minv.utils import safe_makedirs
 
 class Command(CollectionCommand):
     option_list = BaseCommand.option_list + (
-        make_option("-u", "--url", dest="urls", action="append", default=None),
+        make_option("-u", "--url", dest="urls", action="append", default=None,
+            help="Specify that a location shall be reloaded."
+        ),
+        make_option("-a", "--all", dest="all",
+            action="store_true", default=False,
+            help="Reload all locations of the collection."
+        ),
     )
 
     require_group = "minv_g_operators"
 
-    args = 'MISSION/FILE-TYPE [ -u LOCATION URL [ -u ... ] ]'
+    args = 'MISSION/FILE-TYPE -a | -u LOCATION URL [ -u ... ]'
 
     help = (
         'Reload all index files for selected or all locations in the '
@@ -37,8 +43,10 @@ class Command(CollectionCommand):
                 collection.locations.get(url=url)
                 for url in urls
             ]
-        else:
+        elif options.get("all"):
             locations = list(collection.locations.all())
+        else:
+            raise CommandError("No location specified.")
 
         for location in locations:
             print "Reloading index files of location %s" % location
