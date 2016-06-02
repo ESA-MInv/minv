@@ -20,6 +20,7 @@ from minv.inventory.collection.export import (
     export_collection, list_exports
 )
 from minv.utils import get_or_none, timedelta_to_duration
+from minv.tasks.api import monitor
 
 
 def check_collection(view):
@@ -89,6 +90,9 @@ def harvest_view(request, mission, file_type):
             url, collection
         ))
 
+
+        # TODO:
+
     return redirect("inventory:collection:detail",
         mission=mission, file_type=file_type
     )
@@ -132,16 +136,21 @@ def search_view(request, mission, file_type):
             else:
                 locations = collection.locations.all()
 
-            results = []
-            for location in locations:
-                qs = queries.search(
-                    collection, search_data, location.records.all(),
-                    footprint_or_scene_centre == "footprint"
-                )
-                values = qs.aggregate(
-                    volume=Sum("filesize"), count=Count("filename")
-                )
-                results.append((location, values))
+            observer = monitor(
+                "search_overview", mission=mission, file_type=file_type,
+                **search_data
+            )
+            with observer:
+                results = []
+                for location in locations:
+                    qs = queries.search(
+                        collection, search_data, location.records.all(),
+                        footprint_or_scene_centre == "footprint"
+                    )
+                    values = qs.aggregate(
+                        volume=Sum("filesize"), count=Count("filename")
+                    )
+                    results.append((location, values))
 
     else:
         search_form = forms.SearchForm(
@@ -200,8 +209,6 @@ def result_list_view(request, mission, file_type):
             result_list_form.is_valid()
         )
 
-        print search_form.is_valid(), search_form.errors
-
         if forms_valid:
             search_data = search_form.cleaned_data
             result_list_location_id = result_list_form.cleaned_data[
@@ -215,10 +222,15 @@ def result_list_view(request, mission, file_type):
 
             location = collection.locations.get(id=result_list_location_id)
 
-            qs = queries.search(
-                collection, search_data, location.records.all(),
-                footprint_or_scene_centre == "footprint"
+            observer = monitor(
+                "search_results", mission=mission, file_type=file_type,
+                **search_data
             )
+            with observer:
+                qs = queries.search(
+                    collection, search_data, location.records.all(),
+                    footprint_or_scene_centre == "footprint"
+                )
 
             sort = result_list_form.cleaned_data.pop("sort", None)
             if sort:
@@ -467,7 +479,12 @@ def alignment_view(request, mission, file_type):
         pagination_form = forms.PaginationForm(request.POST)
         if form.is_valid() and pagination_form.is_valid():
             frmt = form.cleaned_data.pop("format")
-            locations, qs = queries.alignment(collection, form.cleaned_data)
+            observer = monitor(
+                "alignment_check", mission=mission, file_type=file_type,
+                **form.cleaned_data
+            )
+            with observer:
+                locations, qs = queries.alignment(collection, form.cleaned_data)
             page = pagination_form.cleaned_data.pop("page")
             per_page = pagination_form.cleaned_data.pop("records_per_page")
             records = Paginator(qs, per_page).page(page)
