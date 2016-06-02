@@ -203,6 +203,9 @@ def try_or_none(type_):
 
 
 class GlobalReader(Reader):
+    section = "minv"
+    log_level = Option(default="INFO")
+
     section = "database"
     host = Option(default="")
     port = Option(type=int, default=5432)
@@ -227,6 +230,13 @@ def check_global_configuration(reader):
             getattr(reader, key)
         except Exception as exc:
             errors.append("%s: %s" % (key, exc))
+
+    levels = ("DEBUG", "INFO", "WARN", "ERROR")
+    if reader.log_level not in levels:
+        errors.append(
+            "minv.log_level: invalid value '%s' must be one of %s"
+            % (reader.log_level, ", ".join(levels))
+        )
 
     return errors
 
