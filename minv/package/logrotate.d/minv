@@ -1,4 +1,4 @@
-/var/log/minv/collections/*/*log /var/log/minv/minv.log {
+/var/log/minv/minv.log {
     missingok
     notifempty
     delaycompress
