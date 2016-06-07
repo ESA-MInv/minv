@@ -17,6 +17,10 @@ chown -R minv:minv $LOG_DIR
 
 mkdir -p /var/lock/minv/
 chown -R minv:minv /var/lock/minv/
+
+mkdir -p /tmp/minv/daemon/
+chmod minv:minv /tmp/minv
+
 mkdir -p $DATA_DIR/collections
 chown minv:minv $DATA_DIR/collections
 chmod 0770 $DATA_DIR/collections
