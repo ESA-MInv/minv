@@ -80,15 +80,6 @@ def harvest_view(request, mission, file_type):
         messages.info(request, "Harvesting URL %s for collection %s" % (
             url, collection
         ))
-        messages.success(request, "Harvesting URL %s for collection %s" % (
-            url, collection
-        ))
-        messages.warning(request, "Harvesting URL %s for collection %s" % (
-            url, collection
-        ))
-        messages.error(request, "Harvesting URL %s for collection %s" % (
-            url, collection
-        ))
 
 
         # TODO:
@@ -137,8 +128,7 @@ def search_view(request, mission, file_type):
                 locations = collection.locations.all()
 
             observer = monitor(
-                "search_overview", mission=mission, file_type=file_type,
-                **search_data
+                "search_overview", **search_data
             )
             with observer:
                 results = []
@@ -223,8 +213,7 @@ def result_list_view(request, mission, file_type):
             location = collection.locations.get(id=result_list_location_id)
 
             observer = monitor(
-                "search_results", mission=mission, file_type=file_type,
-                **search_data
+                "search_results", **search_data
             )
             with observer:
                 qs = queries.search(
