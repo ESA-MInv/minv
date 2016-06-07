@@ -23,4 +23,4 @@ chmod 0770 $DATA_DIR/collections
 
 django-admin.py startproject minv_instance $DATA_DIR --template $INSTALL_DIR/instance_template
 chown minv:minv -R $DATA_DIR/minv_instance
-chmod 0770 $DATA_DIR/minv_instance/
+chmod 0771 $DATA_DIR/minv_instance/
