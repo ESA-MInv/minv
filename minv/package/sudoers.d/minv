@@ -1,7 +1,7 @@
 # MInv specific sudo rules:
 
 ## MInv Command Aliases
-Cmnd_Alias MINV = /usr/bin/minv
+Cmnd_Alias MINV = /usr/bin/minv_
 
 ## Allows members of the minv group administer the catalogue.
 %minv ALL=(minv)       NOPASSWD: MINV

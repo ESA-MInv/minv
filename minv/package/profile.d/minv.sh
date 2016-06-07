@@ -1,2 +1,2 @@
 # minv initialization script (sh)
-alias minv="sudo -u minv /usr/bin/minv"
+alias minv="sudo -u minv /usr/bin/minv_"
