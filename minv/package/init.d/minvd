@@ -43,7 +43,7 @@ USER="minv"
 # source the system configuration
 [ -e "$SYSCONF" ] && . "$SYSCONF"
 
-COMMAND="runuser -s /bin/bash $USER -c 'ulimit -S -c 0 &>/dev/null ; nohup python -m minv.harvest.daemon 0<&- &>$CONSOLE_LOG & echo \$!' > $PIDFILE"
+COMMAND="runuser -s /bin/bash $USER -c 'ulimit -S -c 0 &>/dev/null ; nohup python /srv/minv/manage.py daemon 0<&- &>$CONSOLE_LOG & echo \$!' > $PIDFILE"
 
 _remove_unused_socket_file() {
     # remove the unused socket file
