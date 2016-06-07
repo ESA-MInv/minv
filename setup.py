@@ -18,7 +18,7 @@ setup(
     url='',
     packages=find_packages(),
     scripts=[
-        "minv/package/scripts/minv",
+        "minv/package/scripts/minv_",
         "minv/package/minv_setup.sh"
     ],
     include_package_data=True,
