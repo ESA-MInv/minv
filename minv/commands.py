@@ -24,7 +24,13 @@ class MinvCommand(BaseCommand):
             # self.authorize(self.require_group)
             pass
 
-        self.info("Running command '%s'" % self.get_command_name())
+        self.info(
+            "User '%s' is running command '%s' with "
+            "arguments %r and options %r" % (
+                self.get_user_name(), self.get_command_name(),
+                args, options
+            )
+        )
         return self.handle_authorized(*args, **options)
 
     def get_command_name(self):
