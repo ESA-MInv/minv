@@ -77,10 +77,12 @@ class Collection(models.Model):
         )
 
     @property
+    def config_path(self):
+        return join(self.config_dir, "collection.conf")
+
+    @property
     def configuration(self):
-        return config.CollectionConfigurationReader(
-            join(self.config_dir, "collection.conf")
-        )
+        return config.CollectionConfigurationReader(self.config_path)
 
     @property
     def data_dir(self):

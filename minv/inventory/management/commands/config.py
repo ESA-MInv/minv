@@ -1,11 +1,10 @@
 from optparse import make_option
 import os
-from os.path import join, splitext, getmtime
+from os.path import join
 import tempfile
 import shutil
 from uuid import uuid4
 import subprocess
-from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -14,7 +13,8 @@ from minv.inventory import models
 from minv.config import (
     GlobalReader,
     check_global_configuration,
-    global_configuration_changes
+    global_configuration_changes,
+    backup_config
 )
 from minv.inventory.collection.config import (
     CollectionConfigurationReader,
@@ -145,15 +145,7 @@ class Command(MinvCommand):
             )
 
     def _backup_config(self, path):
-        root, ext = splitext(path)
-        timestamp = datetime.fromtimestamp(getmtime(path)).replace(
-            microsecond=0, tzinfo=None
-        )
-        timestr = timestamp.isoformat("T").replace(":", "")
-        backup_path = "%s-%s%s" % (
-            root, timestr, ext
-        )
-        shutil.move(path, backup_path)
+        backup_path = backup_config(path)
         self.info("Backed up old configuration at '%s'" % backup_path)
 
     def handle_edit(self, collection=None):

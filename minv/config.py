@@ -1,6 +1,8 @@
 import sys
-from os.path import join
+from os.path import join, getmtime, splitext
 from ConfigParser import NoOptionError, NoSectionError, RawConfigParser
+from datetime import datetime
+import shutil
 
 from django.conf import settings
 from django.utils.datastructures import SortedDict
@@ -246,6 +248,9 @@ def global_configuration_changes(old, new):
     database_keys = ("host", "port", "database", "user", "password")
     daemon_keys = ("socket_filename", "daemon_port", "num_workers")
 
+    if old.log_level != new.log_level:
+        changes["minv.log_level"] = (old.log_level, new.log_level)
+
     for key in database_keys:
         if getattr(old, key) != getattr(new, key):
             changes["database.%s" % key] = (getattr(old, key), getattr(new, key))
@@ -255,3 +260,19 @@ def global_configuration_changes(old, new):
             changes["daemon.%s" % key] = (getattr(old, key), getattr(new, key))
 
     return changes
+
+
+def backup_config(path):
+    """ Move a configuration file to a new path with a timestamp (of its last
+    modification) added.
+    """
+    root, ext = splitext(path)
+    timestamp = datetime.fromtimestamp(getmtime(path)).replace(
+        microsecond=0, tzinfo=None
+    )
+    timestr = timestamp.isoformat("T").replace(":", "")
+    backup_path = "%s-%s%s" % (
+        root, timestr, ext
+    )
+    shutil.move(path, backup_path)
+    return backup_path
