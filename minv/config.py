@@ -194,6 +194,13 @@ class Reader(object):
         with open(self._config_path) as f:
             self._config.readfp(f)
 
+    @classmethod
+    def from_fileobject(cls, fobj):
+        reader = cls()
+        reader._config = RawConfigParser()
+        reader._config.readfp(fobj)
+        return reader
+
 
 def try_or_none(type_):
     def wrapper(value):
