@@ -90,7 +90,7 @@ class Daemon(object):
 
     def on_scheduled(self, scheduled_task):
         task = scheduled_task.task
-        arguments = scheduled_task.arguement_values
+        arguments = scheduled_task.argument_values
         scheduled_task.delete()
         self.executor_pool.apply_async(registry.run, [task], arguments)
 
