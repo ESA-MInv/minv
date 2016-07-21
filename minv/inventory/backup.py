@@ -1,5 +1,5 @@
 import os
-from os.path import join, basename, getmtime
+from os.path import join, basename, getmtime, exists
 from zipfile import ZipFile
 import glob
 from contextlib import closing
@@ -13,7 +13,7 @@ from django.utils.timezone import now, parse
 import minv
 from minv.inventory import models
 from minv.tasks.registry import task
-from minv.utils import safe_makedirs, parse_duration
+from minv.utils import safe_makedirs, parse_duration, timestamp
 from minv.config import (
     backup_config, GlobalReader,
     check_global_configuration
@@ -88,8 +88,23 @@ def restore(in_path):
         names = in_zip.namelist()
 
         if manifest["logs"]:
-            # TODO: restore logs
-            pass
+            # restore logs
+            for name in names:
+                extract = False
+                # extract the file if it does not exist in the filesystem, or the
+                # filesystem version is older
+                if name.startswith("logs/"):
+                    if exists(join("/var/log/minv", basename(name))):
+                        ts = timestamp(datetime(*in_zip.getinfo(name).date_time))
+                        if ts > getmtime(join("/var/log/minv", basename(name))):
+                            extract = True
+                    else:
+                        extract = True
+
+                if extract:
+                    _restore_file(
+                        in_zip, name, join("/var/log/minv", basename(name))
+                    )
 
         if manifest["config"]:
             # restore the global configuration
@@ -98,8 +113,7 @@ def restore(in_path):
             )
             if not errors:
                 backup_config("/etc/minv/minv.conf")
-                with open("/etc/minv/minv.conf", "w") as f:
-                    shutil.copyfileobj(in_zip.open("config/minv.conf"), f)
+                _restore_file(in_zip, "config/minv.conf", "/etc/minv/minv.conf")
                 logger.info("Restored global configuration.")
             else:
                 logger.warn(
@@ -134,14 +148,20 @@ def _restore_collection(in_zip, mission, file_type):
     )
     if not errors:
         backup_config(collection.config_path)
-        with open(collection.config_path, "w") as f:
-            shutil.copyfileobj(in_zip.open(zip_config_path), f)
+        _restore_file(in_zip, zip_config_path, collection.config_path)
         logger.info("Restored configuration for collection %s" % collection)
     else:
         logger.warn(
             "Could not restore global configuration due to errors:\n%s"
             % ("\n".join(errors))
         )
+
+
+def _restore_file(in_zip, name, path):
+    """ Utility function to restore a single file from a zip to a given path.
+    """
+    with open(path, "w") as f:
+        shutil.copyfileobj(in_zip.open(name), f)
 
 
 class FullBackup(object):
@@ -214,9 +234,9 @@ class IncrementalBackup(FullBackup):
         super(IncrementalBackup, self).__init__(logs, config, app)
         try:
             duration = parse_duration(incr)
-            self.timestamp = (now() - duration).timestamp()
+            self.timestamp = timestamp(now() - duration)
         except ValueError:
-            self.timestamp = parse(incr).timestamp()
+            self.timestamp = timestamp(parse(incr))
 
         self.timestamp = incr
 
