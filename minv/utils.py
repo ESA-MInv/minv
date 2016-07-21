@@ -3,7 +3,7 @@ import os
 import errno
 import fcntl
 from functools import wraps
-from datetime import timedelta
+from datetime import timedelta, datetime
 import re
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -116,6 +116,12 @@ def timedelta_to_duration(tdelta):
             parts.append("%sS" % seconds)
 
     return "".join(parts)
+
+
+def timestamp(dt):
+    """ Returns a unix timestamp from a given datetime.
+    """
+    return int(total_seconds(dt - datetime(1970, 1, 1)))
 
 
 class FileLockException(Exception):
