@@ -145,7 +145,7 @@ def ingest(mission, file_type, url, index_file_name):
 
                 # iterate the files rows in chunks
                 row = None
-                chunk = islice(reader, 1000)
+                chunk = islice(reader, 5000)
 
                 for row in chunk:
                     record = models.Record(
@@ -175,7 +175,10 @@ def ingest(mission, file_type, url, index_file_name):
                 else:
                     # save the next chunk of models to the DB
                     models.Record.objects.bulk_create(records)
-                    logger.debug("Ingested chunk of %d records." % len(records))
+                    logger.debug(
+                        "Ingested chunk of %d records. "
+                        "Current total %d records" % (len(records), count)
+                    )
 
     except Exception as exc:
         # move file to failed directory
