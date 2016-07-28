@@ -165,8 +165,7 @@ def ingest(mission, file_type, url, index_file_name):
 
                         setattr(record, target, value)
 
-                    record.full_clean()
-                    record.save()
+                    records.append(record)
                     count += 1
 
                 # check if the slice was empty and exit when the last line of the
