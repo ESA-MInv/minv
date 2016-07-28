@@ -111,7 +111,7 @@ class Command(MinvCommand):
 
             print("Deleting collection '%s'" % collection)
             collection.delete()
-            if options["purge"]:
+            if options.get("purge"):
                 # TODO: delete configuration folder as-well
                 pass
 
