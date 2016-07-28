@@ -6,6 +6,7 @@ from datetime import datetime
 from urlparse import urlparse
 import logging
 import traceback
+from itertools import islice
 
 from django.db import transaction
 from django.utils.dateparse import parse_datetime
@@ -138,26 +139,45 @@ def ingest(mission, file_type, url, index_file_name):
         count = 0
         with open(path) as f:
             reader = csv.DictReader(f, delimiter="\t")
-            for row in reader:
-                # TODO: only insert rows that fit the collection
-                record = models.Record(index_file=index_file, location=location)
-                for target, source in mapping:
-                    try:
-                        value = row[source]
-                    except KeyError:
-                        raise IngestionError(
-                            "Index file '%s' has no such field '%s'."
-                            % (index_file_name, source)
-                        )
-                    preparator = preparations.get(target)
-                    if preparator:
-                        value = preparator(value)
 
-                    setattr(record, target, value)
+            while True:
+                records = []
 
-                record.full_clean()
-                record.save()
-                count += 1
+                # iterate the files rows in chunks
+                row = None
+                chunk = islice(reader, 1000)
+
+                for row in chunk:
+                    record = models.Record(
+                        index_file=index_file, location=location
+                    )
+                    for target, source in mapping:
+                        try:
+                            value = row[source]
+                        except KeyError:
+                            raise IngestionError(
+                                "Index file '%s' has no such field '%s'."
+                                % (index_file_name, source)
+                            )
+                        preparator = preparations.get(target)
+                        if preparator:
+                            value = preparator(value)
+
+                        setattr(record, target, value)
+
+                    record.full_clean()
+                    record.save()
+                    count += 1
+
+                # check if the slice was empty and exit when the last line of the
+                # was read.
+                if row is None:
+                    break
+                else:
+                    # save the next chunk of models to the DB
+                    models.Record.objects.bulk_create(records)
+                    logger.debug("Ingested chunk of %d records." % len(records))
+
     except Exception as exc:
         # move file to failed directory
         os.rename(
