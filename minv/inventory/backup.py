@@ -239,8 +239,6 @@ class IncrementalBackup(FullBackup):
         except ValueError:
             self.timestamp = timestamp(parse_datetime(incr))
 
-        self.timestamp = incr
-
     def decide_file(self, path, zip_path):
         return getmtime(path) > self.timestamp
 
