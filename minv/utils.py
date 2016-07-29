@@ -121,7 +121,7 @@ def timedelta_to_duration(tdelta):
 def timestamp(dt):
     """ Returns a unix timestamp from a given datetime.
     """
-    return int(total_seconds(dt - datetime(1970, 1, 1)))
+    return int(total_seconds(dt - datetime(1970, 1, 1, tzinfo=dt.tzinfo)))
 
 
 class FileLockException(Exception):
