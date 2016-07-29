@@ -11,7 +11,9 @@ chown -R minv:minv $CONF_DIR/collections
 mkdir -p $LOG_DIR
 mkdir -p $LOG_DIR/collections
 touch $LOG_DIR/minv.log
+touch $LOG_DIR/django.log
 chmod g+w $LOG_DIR/minv.log
+chmod g+w $LOG_DIR/django.log
 chmod 0770 $LOG_DIR
 chown -R minv:minv $LOG_DIR
 
