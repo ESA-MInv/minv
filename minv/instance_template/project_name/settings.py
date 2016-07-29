@@ -22,6 +22,7 @@ MINV_LOCK_DIR = '/tmp/minv/lock'
 MINV_TASK_MODULES = [
     'minv.tasks.harvest',
     'minv.inventory.collection.export',
+    'minv.inventory.backup',
 ]
 
 
