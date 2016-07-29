@@ -18,7 +18,7 @@ from django.contrib.gis.db.models import (
 from django.contrib.gis.geos import MultiPolygon, Polygon, Point
 
 from minv.inventory import models
-from minv.geom_utils import fix_footprint
+from minv.geom_utils import fix_footprint, EmptyMultiPolygon
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,10 @@ def parse_index_time(value):
 
 def parse_footprint(value):
     # we must translate from y/x to x/y here
-    rings = fix_footprint(value)[0]
+    try:
+        rings = fix_footprint(value)[0]
+    except EmptyMultiPolygon:
+        return None
     for ring in rings:
         ring[:] = [
             (point[1], point[0])
@@ -126,7 +129,7 @@ def ingest(mission, file_type, url, index_file_name):
             if isinstance(field, DateTimeField):
                 preparations[target] = parse_datetime  # TODO: necessary?
             elif isinstance(field, CharField) and field.choices:
-                preparations[target] = lambda value: value[0].upper()
+                preparations[target] = lambda value: value[0].upper() if len(value) else None
             elif isinstance(field, MultiPolygonField):
                 preparations[target] = parse_footprint
             elif isinstance(field, PointField):
