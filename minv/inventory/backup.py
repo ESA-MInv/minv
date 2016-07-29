@@ -8,7 +8,8 @@ import json
 import shutil
 import logging
 
-from django.utils.timezone import now, parse
+from django.utils.timezone import now
+from django.utils.dateparse import parse_datetime
 
 import minv
 from minv.inventory import models
@@ -236,7 +237,7 @@ class IncrementalBackup(FullBackup):
             duration = parse_duration(incr)
             self.timestamp = timestamp(now() - duration)
         except ValueError:
-            self.timestamp = timestamp(parse(incr))
+            self.timestamp = timestamp(parse_datetime(incr))
 
         self.timestamp = incr
 
