@@ -6,7 +6,7 @@ INSTALL_DIR=$(dirname `python -c "import minv; print(minv.__file__)"`)
 mkdir -p $CONF_DIR/collections
 chmod 0770 $CONF_DIR/collections
 chown minv:minv $CONF_DIR/minv.conf
-chown -R minv:minv $CONF_DIR
+chown minv:minv -R $CONF_DIR
 
 mkdir -p $LOG_DIR
 mkdir -p $LOG_DIR/collections
@@ -15,13 +15,13 @@ touch $LOG_DIR/django.log
 chmod g+w $LOG_DIR/minv.log
 chmod g+w $LOG_DIR/django.log
 chmod 0770 $LOG_DIR
-chown -R minv:minv $LOG_DIR
+chown minv:minv -R $LOG_DIR
 
 mkdir -p /var/lock/minv/
-chown -R minv:minv /var/lock/minv/
+chown minv:minv -R /var/lock/minv/
 
 mkdir -p /tmp/minv/daemon/
-chmod -R minv:minv /tmp/minv
+chown minv:minv -R /tmp/minv
 
 mkdir -p $DATA_DIR/collections
 chown minv:minv $DATA_DIR/collections
