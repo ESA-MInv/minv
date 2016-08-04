@@ -45,13 +45,13 @@ def check_collection_configuration(reader):
     )
     mapping_fields = set(reader.metadata_mapping.keys())
 
-    if not available_result_list_fields < search_fields:
+    if not available_result_list_fields <= search_fields:
         errors.append(
             "Invalid inventory.available_alignment_fields entries: %s"
             % ", ".join(available_alignment_fields - alignment_fields)
         )
 
-    if not available_alignment_fields < alignment_fields:
+    if not available_alignment_fields <= alignment_fields:
         errors.append(
             "Invalid inventory.available_alignment_fields entries: %s"
             % ", ".join(available_alignment_fields - alignment_fields)
