@@ -57,7 +57,7 @@ def check_collection_configuration(reader):
             % ", ".join(available_alignment_fields - alignment_fields)
         )
 
-    if not mapping_fields < search_fields:
+    if not mapping_fields <= search_fields:
         errors.append(
             "Invalid [metadata_mapping] entries: %s"
             % ", ".join(mapping_fields - search_fields)
