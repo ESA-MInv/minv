@@ -1,3 +1,4 @@
+import sys
 import os
 import grp
 import logging
@@ -72,22 +73,25 @@ class MinvCommand(BaseCommand):
     def debug(self, message):
         logger.debug(message)
         if self.verbosity > 1:
-            print(message)
+            sys.stderr.write(message)
 
     def info(self, message):
         logger.info(message)
         if self.verbosity:
-            print(message)
+            sys.stderr.write(message)
+            sys.stderr.write("\n")
 
     def warning(self, message):
         logger.warning(message)
         if self.verbosity:
-            print(message)
+            sys.stderr.write(message)
+            sys.stderr.write("\n")
 
     def error(self, message):
         logger.error(message)
         if self.verbosity:
-            print(message)
+            sys.stderr.write(message)
+            sys.stderr.write("\n")
 
 
 class CollectionCommand(MinvCommand):
