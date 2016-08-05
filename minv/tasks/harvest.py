@@ -74,8 +74,10 @@ def _harvest_locked(collection, url, reschedule):
 
     failed_retrieve = []
 
+    updated_to_retrieve = [u[1] for u in updated]
+
     # perform actual harvesting
-    for index_file_name in itertools.chain(inserted, updated):
+    for index_file_name in itertools.chain(inserted, updated_to_retrieve):
         try:
             harvester.retrieve(
                 join(url, index_file_name), index_file_name, pending_dir
@@ -85,7 +87,10 @@ def _harvest_locked(collection, url, reschedule):
             failed_retrieve.append(index_file_name)
             logger.debug("Failed to retrieve %s." % index_file_name)
 
-    for index_file_name in itertools.chain(updated, deleted):
+    updated_to_delete = [u[0] for u in updated]
+
+    # delete index files that are deleted or updated
+    for index_file_name in itertools.chain(updated_to_delete, deleted):
         # delete model
         location.index_files.get(filename=index_file_name).delete()
         # remove ingested index file
@@ -94,7 +99,7 @@ def _harvest_locked(collection, url, reschedule):
     failed_ingest = []
 
     # finally ingest the updated and newly inserted index files
-    for index_file_name in itertools.chain(updated, inserted):
+    for index_file_name in itertools.chain(updated_to_retrieve, inserted):
         try:
             index_file_name = extract_zipped_index_file(
                 join(pending_dir, index_file_name)
