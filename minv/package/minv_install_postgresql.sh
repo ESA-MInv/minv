@@ -1,6 +1,7 @@
 DBNAME=minv
 DBTMPL=template_postgis
 DBUSER=minv
+DBTABLESPACE=
 
 usage() {
 cat <<EOF
@@ -12,6 +13,7 @@ for MInv.
     -u USER      name of the database user. defaults to 'minv'
     -d DATABASE  name of the to be created database. defaults to 'minv'
     -t TEMPLATE  name of the template database. defaults to 'template_postgis'
+    --tablespace set a directory to store the database files
     --drop       drop the previous user/database if they exist
 EOF
 }
@@ -29,6 +31,10 @@ while [[ $# > 0 ]] ; do
             ;;
         -t|--template)
             DBTMPL="$2"
+            shift
+            ;;
+        --tablespace)
+            DBTABLESPACE="$2"
             shift
             ;;
         --drop)
@@ -50,7 +56,6 @@ read -s -p "Re-Enter Password: " pw_confirm
     echo "Entered passwords do not match."
     exit 1
 }
-
 
 yum -y install postgresql-server postgis
 
@@ -80,7 +85,21 @@ sudo -u postgres psql -q -d $DBTMPL -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
 
 
 sudo -u postgres psql -q -c "CREATE USER $DBUSER WITH ENCRYPTED PASSWORD '$password' NOSUPERUSER NOCREATEDB NOCREATEROLE ;"
-sudo -u postgres psql -q -c "CREATE DATABASE $DBNAME WITH OWNER $DBUSER TEMPLATE $DBTMPL ENCODING 'UTF-8' ;"
+sudo -u postgres psql -q -c "DROP TABLESPACE IF EXISTS minv_tablespace ;"
+
+if [ -z "$DBTABLESPACE" ] ; then
+    # no tablespace
+    sudo -u postgres psql -q -c "CREATE DATABASE $DBNAME WITH OWNER $DBUSER TEMPLATE $DBTMPL ENCODING 'UTF-8' ;"
+else
+    # tablespace
+    # create the tablespace itself
+    mkdir -p $DBTABLESPACE
+    chown postgres:postgres $DBTABLESPACE
+    sudo -u postgres psql -q -c "CREATE TABLESPACE minv_tablespace LOCATION '$DBTABLESPACE' ;"
+
+    # create the DB with the tablespace
+    sudo -u postgres psql -q -c "CREATE DATABASE $DBNAME WITH OWNER $DBUSER TEMPLATE $DBTMPL ENCODING 'UTF-8' TABLESPACE minv_tablespace ;"
+fi
 
 
 PG_HBA="`sudo -u postgres psql -qA -d $DBTMPL -c "SHOW data_directory;" | grep -m 1 "^/"`/pg_hba.conf"
