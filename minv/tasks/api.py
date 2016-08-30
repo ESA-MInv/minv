@@ -51,8 +51,6 @@ class JobContext(object):
 
     def __exit__(self, etype=None, value=None, tb=None):
         self.job.end_time = now()
-        self.job.full_clean()
-        self.job.save()
 
         if (etype, value, tb) == (None, None, None):
             self.job.status = "finished"
@@ -69,6 +67,9 @@ class JobContext(object):
                     self.job, self.job.task, self.job.run_time
                 )
             )
+
+        self.job.full_clean()
+        self.job.save()
 
 
 def schedule(task, when, arguments):
