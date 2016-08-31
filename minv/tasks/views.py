@@ -92,6 +92,10 @@ def job_view(request, job_id):
     return render(
         request, "tasks/job.html", {
             "collections": inventory_models.Collection.objects.all(),
-            "job": job, "form": form
+            "job": job,
+            "form": form,
+            "is_restartable": job.task in (
+                "harvest", "export", "import", "backup", "restore"
+            )
         }
     )
