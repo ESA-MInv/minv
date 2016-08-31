@@ -20,7 +20,7 @@ from minv.inventory.collection.export import (
     export_collection, list_exports
 )
 from minv.utils import get_or_none, timedelta_to_duration
-from minv.tasks.api import monitor
+from minv.tasks.api import monitor, schedule_many
 
 
 def check_collection(view):
@@ -76,13 +76,19 @@ def harvest_view(request, mission, file_type):
         mission=mission, file_type=file_type
     )
 
+    items = []
     for url in request.GET.getlist("url"):
         messages.info(request, "Harvesting URL %s for collection %s" % (
             url, collection
         ))
+        items.append(("harvest", now(), {
+            "mission": mission,
+            "file_type": file_type,
+            "url": url,
+            "reschedule": False
+        }))
 
-
-        # TODO:
+    schedule_many(items)
 
     return redirect("inventory:collection:detail",
         mission=mission, file_type=file_type
