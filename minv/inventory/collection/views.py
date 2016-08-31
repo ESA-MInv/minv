@@ -482,7 +482,11 @@ def alignment_view(request, mission, file_type):
                 locations, qs = queries.alignment(collection, form.cleaned_data)
             page = pagination_form.cleaned_data.pop("page")
             per_page = pagination_form.cleaned_data.pop("records_per_page")
-            records = Paginator(qs, per_page).page(page)
+
+            if frmt == "html":
+                records = Paginator(qs, per_page).page(page)
+            else:
+                records = qs
     else:
         form = forms.AlignmentForm(
             collection.locations.all(), config.available_alignment_fields or []
