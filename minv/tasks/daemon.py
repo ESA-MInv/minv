@@ -5,7 +5,7 @@ from signal import SIGTERM, SIGINT, signal
 import logging
 import errno
 from multiprocessing.connection import Listener, Client
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import ThreadPool, Pool
 
 from minv.config import GlobalReader
 from minv.tasks.scheduler import Scheduler
@@ -38,7 +38,7 @@ class Daemon(object):
             registry.initialize()
 
             # create executors, listener and scheduler
-            self.executor_pool = ThreadPool(1)
+            self.executor_pool = ThreadPool(5)
             self.scheduler = Scheduler(self.on_scheduled)
             self.listener = get_listener()
 
@@ -62,8 +62,26 @@ class Daemon(object):
                 message = conn.recv()
                 logger.debug("Received message: %r", message)
 
-                if message == "reload":
+                command = message[0]
+                params = message[1:]
+
+                if command == "reload":
                     self.reload_schedule()
+
+                elif command == "restart":
+                    job = models.Job.objects.get(id=params[0])
+                    logger.info("Restarting job '%s'" % job)
+                    self.executor_pool.apply_async(
+                        registry.run, [job], job.arguments
+                    )
+                elif command == "abort":
+                    pass
+                    # TODO: implement
+                    # job = models.Job.objects.get(id=params[0])
+                    # logger.info("Restarting job '%s'" % job)
+                    # self.executor_pool.apply_async(
+                    #     registry.run, [job], job.arguments
+                    # )
 
         finally:
             self.shutdown()
@@ -142,4 +160,18 @@ def send_reload_schedule():
     """ Send a message to the daemon to reload its schedule.
     """
     client = get_client()
-    client.send("reload")
+    client.send(("reload",))
+
+
+def send_restart_job(job_uuid):
+    """ Send a message to the daemon to restart a job.
+    """
+    client = get_client()
+    client.send(("restart", job_uuid))
+
+
+def send_abort_job(job_uuid):
+    """ Send a message to the daemon to abort a job.
+    """
+    client = get_client()
+    client.send(("abort", job_uuid))

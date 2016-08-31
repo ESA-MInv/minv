@@ -1,8 +1,13 @@
+import logging
+
 from django.utils.importlib import import_module
 from django.conf import settings
 
 from minv.tasks.api import monitor
 from minv.tasks import models
+
+
+logger = logging.getLogger(__name__)
 
 
 class Registry(object):
@@ -23,8 +28,11 @@ class Registry(object):
             return wrapped
 
     def run(self, task, **kwargs):
+        name = task if isinstance(task, str) else task.task
+
+        logger.debug("Running task '%s'" % name)
         with monitor(task, **kwargs):
-            return self._tasks[task](**kwargs)
+            return self._tasks[name](**kwargs)
 
     def restart(self, job_id):
         job = models.Job.objects.get(id=job_id)
@@ -37,6 +45,9 @@ class Registry(object):
 
         for module_path in module_list:
             import_module(module_path)
+
+    def get_task_names(self):
+        return sorted(self._tasks.keys())
 
 registry = Registry()
 task = registry.register

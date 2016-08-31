@@ -96,3 +96,20 @@ def schedule_many(many):
     # import here to resolve circular import issue
     from minv.tasks.daemon import send_reload_schedule
     send_reload_schedule()
+
+
+def restart_job(job_or_uuid):
+    """ Utility function to restart a job and send a notification to the daemon
+    to re-process it.
+    """
+    if isinstance(job_or_uuid, str):
+        job = models.Job.objects.get(id=job_or_uuid)
+    else:
+        job = job_or_uuid
+
+    job.status = "pending"
+    job.full_clean()
+    job.save()
+
+    from minv.tasks.daemon import send_restart_job
+    send_restart_job(job.id)

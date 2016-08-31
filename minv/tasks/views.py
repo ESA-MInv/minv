@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 
 from minv.tasks import models
 from minv.tasks import forms
+from minv.tasks.api import restart_job
 from minv.inventory import forms as inventory_forms
 from minv.inventory import models as inventory_models
 
@@ -24,9 +25,14 @@ def job_list_view(request):
 
     if request.method == "POST":
         filter_form = forms.JobFilterForm(request.POST)
-        pagination_form = inventory_forms.PaginationForm(request.POST)
-        if filter_form.is_valid() and filter_form.cleaned_data["status"]:
-            qs = qs.filter(status=filter_form.cleaned_data["status"])
+        pagination_form = inventory_forms.PaginationForm(
+            request.POST, initial={'page': page, 'records_per_page': per_page}
+        )
+        if filter_form.is_valid():
+            if filter_form.cleaned_data["status"]:
+                qs = qs.filter(status=filter_form.cleaned_data["status"])
+            if filter_form.cleaned_data["task"]:
+                qs = qs.filter(task=filter_form.cleaned_data["task"])
 
         if pagination_form.is_valid():
             page = pagination_form.cleaned_data.pop("page")
@@ -35,8 +41,8 @@ def job_list_view(request):
             )
     else:
         filter_form = forms.JobFilterForm()
-        pagination_form = inventory_forms.PaginationForm({
-            "per_page": per_page, "page": page
+        pagination_form = inventory_forms.PaginationForm(initial={
+            "records_per_page": per_page, "page": page
         })
 
     jobs = Paginator(qs, per_page).page(page)
@@ -60,15 +66,8 @@ def job_view(request, job_id):
         if form.is_valid():
             action = form.cleaned_data["action"]
             if action == "restart":
-                job.start_time = now()
-                job.end_time = None
-                job.status = "running"
-                job.full_clean()
-                job.save()
-                messages.info(request, "Job '%s' restarted." % job)
-
-                # TODO: actually restart job
-
+                messages.info(request, "Scheduled restart of job '%s'." % job)
+                restart_job(job)
                 return redirect("tasks:job", job_id=job_id)
             elif action == "abort":
                 if job.status != "running":
