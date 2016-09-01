@@ -1,13 +1,48 @@
-from os.path import dirname, join
+from os.path import dirname, join, basename
+from glob import glob
 
-from fabric.api import local, put, sudo, lcd, env, cd, run
+from fabric.api import local, put, sudo, lcd, env, cd, run, settings
 from fabrant import vagrant
 
 import minv
 
 
-def archive(version=None):
-    version = version or minv.__version__
+RPMS = [
+    "geos-3.3.8-2.el6.x86_64.rpm",
+    "postgis-1.5.8-1.el6.x86_64.rpm",
+    "proj-4.8.0-3.el6.x86_64.rpm",
+    "Django-1.6.11-1.noarch.rpm",
+]
+
+YUM_DEPENDENCIES = [
+    "httpd",
+    "mod_wsgi",
+    "python-psycopg2",
+    "postgresql-server",
+]
+
+ALL_DEPENDENCIES = YUM_DEPENDENCIES + [
+    "postgis",
+    "proj",
+    "geos",
+    "Django"
+]
+
+USER_GROUPS = [
+    ("minv-app-engineer", "minv_g_app_engineers"),
+    ("minv-app-administrator", "minv_g_app_administrators"),
+    ("minv-operator", "minv_g_operators"),
+    ("minv-security-engineer", "minv_g_security_engineers"),
+]
+
+
+def run_script(path, user=None):
+    put(path, "", mode=0755)
+    sudo("sh -l ./%s" % basename(path), user=user)
+    sudo("rm ./%s" % basename(path))
+
+
+def archive(version=minv.__version__):
     with lcd(dirname(__file__)):
         local(
             "git archive --format=tar --prefix=MInv-{version}/ master "
@@ -18,8 +53,7 @@ def archive(version=None):
         )
 
 
-def build(version=None):
-    version = version or minv.__version__
+def build(version=minv.__version__):
     with vagrant(env.builder_path):
         run("cp rpmbuild/SOURCES/MInv-{version}.tar.gz .".format(
             version=version
@@ -33,14 +67,25 @@ def build(version=None):
 
 
 def uninstall():
-    sudo("dropdb template_postgis || true", user="postgres")
-    sudo("dropdb minv || true", user="postgres")
-    sudo("dropuser minv || true", user="postgres")
+    try:
+        sudo("dropdb template_postgis || true", user="postgres")
+        sudo("dropdb minv || true", user="postgres")
+        sudo("dropuser minv || true", user="postgres")
+    except:
+        pass
 
-    sudo(
-        "yum remove -y "
-        "postgresql-server postgis proj geos python-psycopg2 Django minv"
-    )
+    for user, _ in USER_GROUPS:
+        try:
+            sudo("userdel -r %s || true" % user)
+        except:
+            pass
+
+    try:
+        sudo("yum remove -y %s minv" % " ".join(ALL_DEPENDENCIES))
+    except:
+        pass
+
+    sudo("rm -rf /etc/minv/")
 
 
 def reset_db():
@@ -51,108 +96,142 @@ def reset_db():
     put("minv/package/minv_install_postgresql.sh")
     sudo(
         'printf "abcdefghijklmnopq\nabcdefghijklmnopq" '
-        '| sh minv_install_postgresql.sh'
+        '| sh minv_install_postgresql.sh --tablespace /disk/minv_tablespace/'
     )
 
 
-def upload(version=None):
+def upload(version=minv.__version__):
+    """ Implementation of TP-MINV-NOM-000-00 Step 1.1
+    """
     version = version or minv.__version__
     put(join(env.builder_path, "build/RPMS/minv-%s-1.noarch.rpm" % version), "")
-    put(join(env.ink_path, "geos-3.3.8-2.el6.x86_64.rpm"), "")
-    put(join(env.ink_path, "postgis-1.5.8-1.el6.x86_64.rpm"), "")
-    put(join(env.ink_path, "proj-4.8.0-3.el6.x86_64.rpm"), "")
+    put("minv/package/minv_install_postgresql.sh", "")
+    sudo("chmod a+x minv_install_postgresql.sh")
+    with lcd(env.ink_path):
+        for rpm in RPMS:
+            put(rpm, "")
 
 
-def deploy(uninstall=False, restart=True, version=None):
-    version = version or minv.__version__
-    upload(version)
-
-    if uninstall:
-        sudo("yum remove -y minv")
+def install(version=minv.__version__):
+    """ Implementation of TP-MINV-NOM-000-00 Step 1.2
+    """
+    sudo("yum install -y %s" % " ".join(RPMS))
     sudo("yum install -y minv-%s-1.noarch.rpm" % version)
+    sudo(
+        'printf "abcdefghijklmnopq\nabcdefghijklmnopq" '
+        '| sh minv_install_postgresql.sh --tablespace /disk/minv_tablespace/'
+    )
 
+
+def config():
+    """ Implementation of TP-MINV-NOM-000-00 Step 1.3
+    """
     sudo(
         r"sed -i '/#password=/c\password=abcdefghijklmnopq' /etc/minv/minv.conf"
     )
+    sudo(
+        r"sed -i '/log_level = INFO/c\log_level = DEBUG' /etc/minv/minv.conf"
+    )
 
+
+def setup():
+    """ Implementation of TP-MINV-NOM-000-00 Step 1.4
+    """
     sudo("minv_setup.sh")
 
-    sudo(
-        "echo \"from django.contrib.auth.models import User; "
-        "User.objects.create_superuser('admin', 'admin@admin.ad', 'admin')\" "
-        "| minv shell"
-    )
-    if restart:
-        sudo("service httpd restart")
+
+def run_services():
+    """ Implementation of TP-MINV-NOM-000-00 Step 1.5
+    """
+    for service in ("minvd", "httpd", "ntpd"):
+        sudo("service %s start" % service)
+        sudo("chkconfig %s on" % service)
 
 
-def load_test_data():
-    # create a folder for data
-    # sudo("mkdir -p /var/minv_data")
+def initialize():
+    """ Implementation of TP-MINV-NOM-000-01 Steps 2 - 4
+    """
 
-    # try remove the collection before creating it anew
-    sudo("minv collection -d -m Landsat5 -f SIP-SCENE || true", user="minv")
+    with settings(prompts={'Password: ': 'test', 'Password (again): ': 'test'}):
+        for user, group in USER_GROUPS:
+            try:
+                sudo("useradd %s -G %s,minv" % (user, group))
+            except:
+                pass
+            sudo('minv_ createuser %s -g %s' % (user, group), user="minv")
 
-    # when no collection was there, clean up any remnants
-    sudo("rm -rf /etc/minv/collections/Landsat5 || true")
-
-    # create a new collection with locations
-    sudo(
-        "minv collection -c -m Landsat5 -f SIP-SCENE "
-        "-o https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/0/ "
-        "-o https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/1/ "
-        "-o https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/2/ ",
-        user="minv"
-    )
-
-    # override collection configuration
+    # upload script to create collections
     put(
-        "test/data/Landsat5/SIP-SCENE/collection.conf",
-        "/etc/minv/collections/Landsat5/SIP-SCENE/collection.conf",
-        use_sudo=True, mode=0755
+        join(env.testdata_path, "scripts/initial_collections.sh"),
+        "", mode=0755
     )
+    sudo("cp initial_collections.sh /home/minv-app-administrator/")
+
+    # upload collection configs
+    for conf in glob(join(env.testdata_path, "configurations/*.conf")):
+        put(conf, "", mode=0444, use_sudo=True)
+        sudo("cp %s /home/minv-app-administrator/" % basename(conf))
+
+    with cd("/home/minv-app-administrator/"):
+        sudo("chmod a+rx . *")
+        sudo(
+            "sh -l ./initial_collections.sh",
+            user="minv-app-administrator"
+        )
+
+
+def initialize_updates():
     sudo(
-        "chown minv:minv "
-        "/etc/minv/collections/Landsat5/SIP-SCENE/collection.conf"
+        "mkdir /home/minv-app-administrator/TDS4 || true",
+        user="minv-app-administrator"
+    )
+    for conf in glob(join(env.testdata_path, "TDS4/configurations/*.conf")):
+        put(conf, "", mode=0444, use_sudo=True)
+        sudo("cp %s /home/minv-app-administrator/TDS4" % basename(conf))
+
+
+def nominal(version=minv.__version__):
+    archive(version)
+    build(version)
+    upload(version)
+
+    try:
+        uninstall()
+    except:
+        pass
+    install(version)
+    config()
+    setup()
+    run_services()
+
+    initialize()
+
+
+def quick():
+    archive()
+    build()
+    upload()
+
+    sudo("yum remove -y minv")
+    sudo("yum install -y minv-%s-1.noarch.rpm" % minv.__version__)
+
+
+def populate():
+    run_script(join(env.testdata_path, "scripts/populate.sh"), "minv-operator")
+
+
+def perf_setup():
+    put(
+        join(env.testdata_path, "TDS5/TDS5-MINV-PER-COL.conf"), "",
+        mode=0444, use_sudo=True
     )
 
-    # harvest the locations
     sudo(
-        "minv harvest -m Landsat5 -f SIP-SCENE "
-        "-u https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/0/ "
-        "-u https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/1/ "
-        "-u https://data.eox.at/minv/meta/Landsat5/SIP-SCENE/2/ ",
+        "minv_ collection Perf/TenM "
+        "-o https://data.eox.at/minv/meta/OADS1/Perf/TenM/ "
+        "-o https://data.eox.at/minv/meta/OADS2/Perf/TenM/ "
+        "-o https://data.eox.at/minv/meta/OADS3/Perf/TenM/ "
+        "-o https://data.eox.at/minv/meta/OADS4/Perf/TenM/",
         user="minv"
     )
-
-    # add the data and mappings
-    # put("test/data", "/var/minv_data", use_sudo=True)
-    # put(
-    #     "test/data/Landsat5/SIP-SCENE/mapping.json",
-    #     "/etc/minv/collections/Landsat5/SIP-SCENE/mapping.json",
-    #     use_sudo=True, mode=0755
-    # )
-    # sudo("chown -R minv:minv /var/minv_data")
-
-    # ingest data into collection/locations
-    # sudo(
-    #     "minv minv_ingest -m Landsat5 -f SIP-SCENE "
-    #     "-u http://oads1.pdgs.esa.int/ "
-    #     "/var/minv_data/data/Landsat5/SIP-SCENE/0/"
-    #     "19930101-000000_19931231-235959_20150709-145236.index",
-    #     user="minv"
-    # )
-    # sudo(
-    #     "minv minv_ingest -m Landsat5 -f SIP-SCENE "
-    #     "-u http://oads2.pdgs.esa.int/ "
-    #     "/var/minv_data/data/Landsat5/SIP-SCENE/1/"
-    #     "19930101-000000_19931231-235959_20150709-145236.index",
-    #     user="minv"
-    # )
-    # sudo(
-    #     "minv minv_ingest -m Landsat5 -f SIP-SCENE "
-    #     "-u http://nga1.pdgs.esa.int/ "
-    #     "/var/minv_data/data/Landsat5/SIP-SCENE/2/"
-    #     "19930101-000000_19931231-235959_20150709-145236.index",
-    #     user="minv"
-    # )
+    sudo("minv_ config Perf/TenM -i TDS5-MINV-PER-COL.conf")
