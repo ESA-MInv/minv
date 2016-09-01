@@ -13,12 +13,14 @@ from django.http import StreamingHttpResponse, Http404
 from django.db.models import Sum, Count
 from django.contrib.auth.decorators import permission_required, login_required
 
+from minv.config import backup_config
 from minv.inventory import models
 from minv.inventory import forms
 from minv.inventory import queries
 from minv.inventory.collection.export import (
     export_collection, list_exports
 )
+from minv.inventory.collection.config import check_collection_configuration
 from minv.utils import get_or_none, timedelta_to_duration
 from minv.tasks.api import monitor, schedule_many
 
@@ -647,10 +649,17 @@ def configuration_view(request, mission, file_type):
                     mapping[data["search_key"]] = data["index_file_key"]
 
             config.metadata_mapping = mapping
-            config.write()
-            messages.info(request,
-                "Saved configuration for collection %s." % collection
-            )
+            errors = check_collection_configuration(config)
+
+            if errors:
+                for error in errors:
+                    messages.error(request, error)
+            else:
+                backup_config(config._config_path)
+                config.write()
+                messages.info(request,
+                    "Saved configuration for collection %s." % collection
+                )
 
             # re-read the forms here with the updated configuration
             config.read(reset=True)
