@@ -78,6 +78,18 @@ def search(collection, filters=None, queryset=None, area_is_footprint=True):
                 else:
                     raise ValueError("Invalid parameter %s: %r" % (key, value))
 
+            elif isinstance(value, str):
+                if "*" in value:
+                    start, _, end = value.partition("*")
+                    filter_ = {}
+
+                    if start:
+                        filter_["%s__startswith" % key] = start
+                    if end:
+                        filter_["%s__endswith" % key] = end
+                else:
+                    filter_ = {key: value}
+
             else:
                 filter_ = {key: value}
 
