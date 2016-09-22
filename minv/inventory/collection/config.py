@@ -11,7 +11,7 @@ class CollectionConfigurationReader(config.Reader):
     available_result_list_fields = config.Option(default=None, separator=",")
     available_alignment_fields = config.Option(default=None, separator=",")
 
-    metadata_mapping = config.SectionOption()
+    default_metadata_mapping = config.SectionOption("metadata_mapping")
 
 
 def check_collection_configuration(reader):
@@ -43,7 +43,6 @@ def check_collection_configuration(reader):
     available_alignment_fields = set(
         reader.available_alignment_fields or []
     )
-    mapping_fields = set(reader.metadata_mapping.keys())
 
     if not available_result_list_fields <= search_fields:
         errors.append(
@@ -57,11 +56,18 @@ def check_collection_configuration(reader):
             % ", ".join(available_alignment_fields - alignment_fields)
         )
 
-    if not mapping_fields <= search_fields:
-        errors.append(
-            "Invalid [metadata_mapping] entries: %s"
-            % ", ".join(mapping_fields - search_fields)
-        )
+    mapping_sections = [
+        section for section in reader._config.sections()
+        if section.startswith("metadata_mapping")
+    ]
+    for section in mapping_sections:
+        mapping_fields = set(reader.default_metadata_mapping.keys())
+
+        if not mapping_fields <= search_fields:
+            errors.append(
+                "Invalid [%s] entries: %s"
+                % (section, ", ".join(mapping_fields - search_fields))
+            )
 
     return errors
 
@@ -85,17 +91,36 @@ def collection_configuration_changes(old, new):
             old.available_alignment_fields, new.available_alignment_fields
         )
 
-    for key, value in old.metadata_mapping.items():
-        new_value = new.metadata_mapping.get(key)
-        if value != new_value:
-            changes["metadata_mapping.%s" % key] = (
-                value, new_value
-            )
+    old_mapping_sections = set(
+        section for section in old._config.sections()
+        if section.startswith("metadata_mapping")
+    )
 
-    for key, value in new.metadata_mapping.items():
-        if key not in old.metadata_mapping:
-            changes["metadata_mapping.%s" % key] = (
-                None, value
-            )
+    new_mapping_sections = set(
+        section for section in old._config.sections()
+        if section.startswith("metadata_mapping")
+    )
+
+    for section in (old_mapping_sections - new_mapping_sections):
+        changes[section] = (old.get_section_dict(section), None)
+
+    for section in (new_mapping_sections - old_mapping_sections):
+        changes[section] = (None, new.get_section_dict(section))
+
+    for section in (old_mapping_sections & new_mapping_sections):
+        old_mapping = old.get_section_dict(section)
+        new_mapping = new.get_section_dict(section)
+        for key, value in old_mapping.items():
+            new_value = new_mapping.get(key)
+            if value != new_value:
+                changes["metadata_mapping.%s" % key] = (
+                    value, new_value
+                )
+
+        for key, value in new_mapping.items():
+            if key not in old_mapping:
+                changes["metadata_mapping.%s" % key] = (
+                    None, value
+                )
 
     return changes

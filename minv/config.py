@@ -109,18 +109,10 @@ class SectionOption(property):
         self.section = section  # needs to be set by the reader metaclass
 
     def fget(self, reader):
-        try:
-            return dict(reader._config.items(self.section))
-        except NoSectionError:
-            return {}
+        return reader.get_section_dict(self.section)
 
     def fset(self, reader, values):
-        reader._config.remove_section(self.section)
-
-        if values:
-            reader._config.add_section(self.section)
-            for key, value in values.items():
-                reader._config.set(self.section, key, value)
+        reader.set_section_dict(self.section, values)
 
     def fdel(self, reader):
         reader._config.remove_section(self.section)
@@ -193,6 +185,20 @@ class Reader(object):
 
         with open(self._config_path) as f:
             self._config.readfp(f)
+
+    def get_section_dict(self, section):
+        try:
+            return dict(self._config.items(section))
+        except NoSectionError:
+            return {}
+
+    def set_section_dict(self, section, values):
+        self._config.remove_section(section)
+
+        if values:
+            self._config.add_section(section)
+            for key, value in values.items():
+                self._config.set(section, key, value)
 
     @classmethod
     def from_fileobject(cls, fobj):

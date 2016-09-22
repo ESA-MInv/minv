@@ -97,6 +97,17 @@ def harvest_view(request, mission, file_type):
     )
 
 
+def get_available_search_fields(collection):
+    available_search_fields = set()
+    for location in collection.locations.all():
+        available_search_fields |= set(
+            collection.get_metadata_field_mapping(
+                location.url
+            ).keys()
+        )
+    return available_search_fields
+
+
 @login_required(login_url="login")
 @check_collection
 def search_view(request, mission, file_type):
@@ -106,7 +117,7 @@ def search_view(request, mission, file_type):
         mission=mission, file_type=file_type
     )
 
-    available_search_fields = collection.configuration.metadata_mapping.keys()
+    available_search_fields = get_available_search_fields(collection)
 
     results = None
     if request.method == "POST":
@@ -180,7 +191,8 @@ def result_list_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
-    available_search_fields = collection.configuration.metadata_mapping.keys()
+
+    available_search_fields = get_available_search_fields(collection)
 
     config = collection.configuration
     all_choices = dict((("checksum", "Checksum"),) + models.SEARCH_FIELD_CHOICES)
@@ -620,6 +632,39 @@ def download_export_view(request, mission, file_type, filename):
     )
 
 
+def _generate_mapping_formsets(collection, config=None, POST=None):
+    if POST:
+        formsets = [
+            (None, forms.MetadataMappingFormset(POST, prefix="default"))
+        ]
+        formsets.extend([
+            (str(location), forms.MetadataMappingFormset(
+                POST, prefix="location_%d" % location.pk)
+            )
+            for location in collection.locations.all()
+        ])
+    else:
+        formsets = [
+            (None, forms.MetadataMappingFormset(prefix="default", initial=[
+                {"search_key": key, "index_file_key": v}
+                for key, v in config.default_metadata_mapping.items()
+            ]))
+        ]
+        formsets.extend([
+            (str(location), forms.MetadataMappingFormset(
+                prefix="location_%d" % location.pk, initial=[
+                    {"search_key": key, "index_file_key": v}
+                    for key, v in config.get_section_dict(
+                        "metadata_mapping.%s" % location.url
+                    ).items()
+                ])
+            )
+            for location in collection.locations.all()
+        ])
+
+    return formsets
+
+
 @permission_required("inventory.can_configure_collections", raise_exception=True)
 @check_collection
 def configuration_view(request, mission, file_type):
@@ -634,21 +679,32 @@ def configuration_view(request, mission, file_type):
 
     if request.method == "POST":
         configuration_form = forms.CollectionConfigurationForm(request.POST)
-        mapping_formset = forms.MetadataMappingFormset(request.POST)
+        mapping_formsets = _generate_mapping_formsets(
+            collection, POST=request.POST
+        )
 
-        if configuration_form.is_valid() and mapping_formset.is_valid():
+        mapping_formsets_valid = all(map(
+            lambda f: f[1].is_valid(), mapping_formsets
+        ))
+
+        if configuration_form.is_valid() and mapping_formsets_valid:
             for key, value in configuration_form.cleaned_data.items():
                 setattr(config, key, value)
 
-            mapping = {}
-            for form in mapping_formset:
-                if form.is_valid():
-                    data = form.cleaned_data
-                    if data["DELETE"] or not data["index_file_key"]:
-                        continue
-                    mapping[data["search_key"]] = data["index_file_key"]
+            for url, mapping_formset in mapping_formsets:
+                mapping = {}
+                for form in mapping_formset:
+                    if form.is_valid():
+                        data = form.cleaned_data
+                        if data["DELETE"] or not data["index_file_key"]:
+                            continue
+                        mapping[data["search_key"]] = data["index_file_key"]
 
-            config.metadata_mapping = mapping
+                if url:
+                    config.set_section_dict("metadata_mapping.%s" % url, mapping)
+                else:
+                    config.default_metadata_mapping = mapping
+
             errors = check_collection_configuration(config)
 
             if errors:
@@ -678,10 +734,9 @@ def configuration_view(request, mission, file_type):
                         config.available_alignment_fields
                 }
             )
-            mapping_formset = forms.MetadataMappingFormset(initial=[
-                {"search_key": key, "index_file_key": v}
-                for key, v in config.metadata_mapping.items()
-            ])
+            mapping_formsets = _generate_mapping_formsets(
+                collection, config=config
+            )
 
     else:
         configuration_form = forms.CollectionConfigurationForm(
@@ -698,15 +753,14 @@ def configuration_view(request, mission, file_type):
                     config.available_alignment_fields
             }
         )
-        mapping_formset = forms.MetadataMappingFormset(initial=[
-            {"search_key": key, "index_file_key": v}
-            for key, v in config.metadata_mapping.items()
-        ])
+        mapping_formsets = _generate_mapping_formsets(
+            collection, config=config
+        )
 
     return render(
         request, "inventory/collection/configuration.html", {
             "collections": models.Collection.objects.all(),
             "collection": collection, "configuration_form": configuration_form,
-            "mapping_formset": mapping_formset
+            "mapping_formsets": mapping_formsets
         }
     )

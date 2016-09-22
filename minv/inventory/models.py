@@ -66,8 +66,11 @@ class Collection(models.Model):
     def __unicode__(self):
         return "%s/%s" % (self.mission, self.file_type)
 
-    def get_metadata_field_mapping(self):
-        return self.configuration.metadata_mapping
+    def get_metadata_field_mapping(self, url):
+        mapping = self.configuration.get_section_dict(
+            "metadata_mapping.%s" % url
+        )
+        return mapping or self.configuration.default_metadata_mapping
 
     @property
     def config_dir(self):

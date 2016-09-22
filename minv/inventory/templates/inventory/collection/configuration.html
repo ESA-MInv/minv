@@ -22,49 +22,65 @@
   <h2>Configuration</h2>
   {% render_form configuration_form %}
 
-  <h2>Harvesting Metadata mapping</h2>
-  {{ mapping_formset.management_form }}
 
-  <table class="table">
-    <thead>
-    {% for form in mapping_formset.forms %}
-      {% if forloop.first %}
-        {% for field in form %}
-          <th>{{ field.label_tag }}</th>
-        {% endfor %}
-      {% endif %}
-    </thead>
-    <tbody>
-      <tr>
-        {% for field in form %}
-          <td>{{ field }}{% for error in field.errors %}
-            <span class="help-block col-xs-offset-2">{{ error }}</span>
-          {% endfor %}</td>
-        {% endfor %}
+
+  {% for url, mapping_formset in mapping_formsets %}
+
+    {% if not url %}
+    <h2>Default Harvesting Metadata mapping</h2>
+    {% else %}
+    <h2>Harvesting Metadata mapping for {{ url }}</h2>
+    {% endif %}
+    {{ mapping_formset.management_form }}
+
+    <table class="table">
+      <thead>
+      {% for form in mapping_formset.forms %}
+        {% if forloop.first %}
+          {% for field in form %}
+            <th>{{ field.label_tag }}</th>
+          {% endfor %}
+        {% endif %}
+      </thead>
+      <tbody>
+        <tr>
+          {% for field in form %}
+            <td>{{ field }}{% for error in field.errors %}
+              <span class="help-block col-xs-offset-2">{{ error }}</span>
+            {% endfor %}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+      <tr class="insert-row-before">
+        <td><a href="#" class="add-another-mapping">Add another mapping</a></td>
       </tr>
-    {% endfor %}
-    <tr id="insert-row-before">
-      <td><a href="#" id="add-another-mapping">Add another mapping</a></td>
-    </tr>
-    </tbody>
-  </table>
+      </tbody>
+    </table>
 
-  <script type="text/template" id="row-template">
-    <tr>
-    {% for field in mapping_formset.empty_form %}
-      <td>{{ field }}</td>
-    {% endfor %}
-    </tr>
-  </script>
+    <script type="text/template" id="row-template-{{ forloop.counter0 }}">
+      <tr>
+      {% for field in mapping_formset.empty_form %}
+        <td>{{ field }}</td>
+      {% endfor %}
+      </tr>
+    </script>
 
-  <script>
-  $(function() {
-    $("#add-another-mapping").click(function() {
-      $($("#row-template").html().replace(/__prefix__/g, $("tbody tr").length - 1)).insertBefore("#insert-row-before");
-      $("#id_form-TOTAL_FORMS").val(parseInt($("#id_form-TOTAL_FORMS").val()) + 1);
-    });
-  });
-  </script>
+
+      <script>
+        $(function() {
+          $("table:eq({{ forloop.counter0 }}) .add-another-mapping").click(function(event) {
+            event.preventDefault();
+            $(
+              $("#row-template-{{ forloop.counter0 }}")
+                .html()
+                .replace(/__prefix__/g, $("table:eq({{ forloop.counter0 }}) tbody tr").length - 1)
+            ).insertBefore("table:eq({{ forloop.counter0 }}) .insert-row-before");
+            $("#id_{{ mapping_formset.prefix }}-TOTAL_FORMS").val(parseInt($("#id_{{ mapping_formset.prefix }}-TOTAL_FORMS").val()) + 1);
+          });
+        });
+      </script>
+
+  {% endfor %}
 
   <div class="form-group">
     <div class="col-sm-offset-2 col-sm-10">

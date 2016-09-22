@@ -123,7 +123,13 @@ def ingest(mission, file_type, url, index_file_name):
             "filename": lambda v: basename(urlparse(v).path)
         }
 
-        mapping = collection.get_metadata_field_mapping().items()
+        mapping = collection.get_metadata_field_mapping(url).items()
+
+        if not mapping:
+            raise IngestError("No metadata mapping configured for %s/%s %s"
+                % (mission, file_type, url)
+            )
+
         for target, _ in mapping:
             field = meta.get_field(target)
             if isinstance(field, DateTimeField):
