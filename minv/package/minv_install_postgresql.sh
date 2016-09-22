@@ -57,6 +57,7 @@ read -s -p "Re-Enter Password: " pw_confirm
     exit 1
 }
 
+echo "Installing PostgreSQL and PostGIS packages."
 yum -y install postgresql-server postgis
 
 service postgresql initdb
@@ -66,10 +67,13 @@ service postgresql start
 cd /home # to suppress warning
 
 [ -n $DROP ] && {
+    echo "Dropping databases: '$DBTMPL' and '$DBNAME' and user '$DBUSER'"
+    sudo -u postgres dropdb $DBTMPL || true
     sudo -u postgres dropdb $DBNAME || true
     sudo -u postgres dropuser $DBUSER || true
 }
 
+echo "Creating template database '$DBTMPL'"
 sudo -u postgres createdb $DBTMPL
 sudo -u postgres createlang plpgsql $DBTMPL
 
@@ -77,21 +81,23 @@ PG_SHARE=/usr/share/pgsql
 POSTGIS_SQL="postgis-64.sql"
 [ -f "$PG_SHARE/contrib/$POSTGIS_SQL" ] || POSTGIS_SQL="postgis.sql"
 
+echo "Installing postgis on '$DBTMPL'."
 sudo -u postgres psql -q -d $DBTMPL -f "$PG_SHARE/contrib/$POSTGIS_SQL"
 sudo -u postgres psql -q -d $DBTMPL -f "$PG_SHARE/contrib/spatial_ref_sys.sql"
 sudo -u postgres psql -q -d $DBTMPL -c "GRANT ALL ON geometry_columns TO PUBLIC;"
 sudo -u postgres psql -q -d $DBTMPL -c "GRANT ALL ON geography_columns TO PUBLIC;"
 sudo -u postgres psql -q -d $DBTMPL -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
 
-
+echo "Creating DB user '$DBUSER'"
 sudo -u postgres psql -q -c "CREATE USER $DBUSER WITH ENCRYPTED PASSWORD '$password' NOSUPERUSER NOCREATEDB NOCREATEROLE ;"
 sudo -u postgres psql -q -c "DROP TABLESPACE IF EXISTS minv_tablespace ;"
 
 if [ -z "$DBTABLESPACE" ] ; then
+    echo "Create Database without tablespace."
     # no tablespace
     sudo -u postgres psql -q -c "CREATE DATABASE $DBNAME WITH OWNER $DBUSER TEMPLATE $DBTMPL ENCODING 'UTF-8' ;"
 else
-    # tablespace
+    echo "Create Database with tablespace '$DBTABLESPACE'."
     # create the tablespace itself
     mkdir -p $DBTABLESPACE
     chown postgres:postgres $DBTABLESPACE
