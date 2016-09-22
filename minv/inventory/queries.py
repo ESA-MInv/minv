@@ -31,6 +31,7 @@ def search(collection, filters=None, queryset=None, area_is_footprint=True):
 
             if value is None or value == "":
                 continue
+
             if key == "locations":
                 if not value:
                     continue
@@ -78,7 +79,7 @@ def search(collection, filters=None, queryset=None, area_is_footprint=True):
                 else:
                     raise ValueError("Invalid parameter %s: %r" % (key, value))
 
-            elif isinstance(value, str):
+            elif isinstance(value, basestring):
                 if "*" in value:
                     start, _, end = value.partition("*")
                     filter_ = {}
@@ -152,12 +153,15 @@ class AlignmentQuerySet(object):
         cursor = connection.cursor()
         cursor.execute(query)
         for row in cursor:
+            print row
             checksums = row[3:]
             yield {
-                "filename": row[0], "checksum_mismatch": bool(
+                "filename": row[0],
+                "checksum_mismatch": bool(
                     len(set([c for c in checksums if c is not None]))-1
                 ),
-                "incidences": checksums, "annotation_count": row[2],
+                "incidences": checksums,
+                "annotation_count": row[2],
                 "annotations": models.Annotation.objects.filter(
                     record__filename=row[0], record__location__in=self._locations
                 ).values_list("text", flat=True)
