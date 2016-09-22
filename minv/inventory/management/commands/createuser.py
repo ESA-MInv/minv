@@ -46,7 +46,10 @@ class Command(MinvCommand):
         if pwd1 != pwd2:
             raise CommandError("Passwords do not match.")
 
-        user = models.User.objects.create_user(username, password=pwd1)
+        try:
+            user = models.User.objects.create_user(username, password=pwd1)
+        except:
+            raise CommandError("User '%s' already exists" % username)
 
         for groupname in groups:
             try:
