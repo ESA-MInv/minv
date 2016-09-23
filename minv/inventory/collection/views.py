@@ -638,10 +638,10 @@ def _generate_mapping_formsets(collection, config=None, POST=None):
             (None, forms.MetadataMappingFormset(POST, prefix="default"))
         ]
         formsets.extend([
-            (str(location), forms.MetadataMappingFormset(
+            (location, forms.MetadataMappingFormset(
                 POST, prefix="location_%d" % location.pk)
             )
-            for location in collection.locations.all()
+            for location in collection.locations.all().order_by("pk")
         ])
     else:
         formsets = [
@@ -651,20 +651,22 @@ def _generate_mapping_formsets(collection, config=None, POST=None):
             ]))
         ]
         formsets.extend([
-            (str(location), forms.MetadataMappingFormset(
+            (location, forms.MetadataMappingFormset(
                 prefix="location_%d" % location.pk, initial=[
                     {"search_key": key, "index_file_key": v}
                     for key, v in config.get_section_dict(
-                        "metadata_mapping.%s" % location.url
+                        "metadata_mapping.%s" % location.url,
+                        ordered=True
                     ).items()
                 ])
             )
-            for location in collection.locations.all()
+            for location in collection.locations.all().order_by("pk")
         ])
 
     return formsets
 
 
+@login_required(login_url="login")
 @permission_required("inventory.can_configure_collections", raise_exception=True)
 @check_collection
 def configuration_view(request, mission, file_type):
@@ -691,17 +693,20 @@ def configuration_view(request, mission, file_type):
             for key, value in configuration_form.cleaned_data.items():
                 setattr(config, key, value)
 
-            for url, mapping_formset in mapping_formsets:
-                mapping = {}
+            for location, mapping_formset in mapping_formsets:
+                mapping = SortedDict()
                 for form in mapping_formset:
                     if form.is_valid():
                         data = form.cleaned_data
+                        print data, type(data)
                         if data["DELETE"] or not data["index_file_key"]:
                             continue
                         mapping[data["search_key"]] = data["index_file_key"]
 
-                if url:
-                    config.set_section_dict("metadata_mapping.%s" % url, mapping)
+                if location:
+                    config.set_section_dict(
+                        "metadata_mapping.%s" % location.url, mapping
+                    )
                 else:
                     config.default_metadata_mapping = mapping
 

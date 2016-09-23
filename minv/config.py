@@ -66,7 +66,7 @@ class Option(property):
             raise
 
         if self.separator is not None:
-            if raw_value is None:
+            if not raw_value:
                 return []
             return map(self.type, raw_value.split(self.separator))
 
@@ -109,7 +109,7 @@ class SectionOption(property):
         self.section = section  # needs to be set by the reader metaclass
 
     def fget(self, reader):
-        return reader.get_section_dict(self.section)
+        return reader.get_section_dict(self.section, ordered=True)
 
     def fset(self, reader, values):
         reader.set_section_dict(self.section, values)
@@ -186,9 +186,10 @@ class Reader(object):
         with open(self._config_path) as f:
             self._config.readfp(f)
 
-    def get_section_dict(self, section):
+    def get_section_dict(self, section, ordered=False):
         try:
-            return dict(self._config.items(section))
+            items = self._config.items(section)
+            return SortedDict(items) if ordered else dict(items)
         except NoSectionError:
             return {}
 

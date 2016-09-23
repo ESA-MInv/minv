@@ -394,7 +394,7 @@ class CollectionConfigurationForm(forms.Form):
         validators=[RegexValidator(DURATION_REGEX)]
     )
     available_result_list_fields = forms.MultipleChoiceField(
-        required=True,
+        required=False,
         choices=[
             field
             for field in inventory_models.SEARCH_FIELD_CHOICES
@@ -405,7 +405,7 @@ class CollectionConfigurationForm(forms.Form):
         widget=forms.CheckboxSelectMultiple(attrs=list_inline)
     )
     available_alignment_fields = forms.MultipleChoiceField(
-        required=True, choices=inventory_models.ALIGNMENT_FIELD_CHOICES,
+        required=False, choices=inventory_models.ALIGNMENT_FIELD_CHOICES,
         widget=forms.CheckboxSelectMultiple(attrs=list_inline)
     )
 
