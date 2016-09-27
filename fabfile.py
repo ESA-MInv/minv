@@ -86,6 +86,8 @@ def uninstall():
         pass
 
     sudo("rm -rf /etc/minv/")
+    sudo('/bin/rm -rf /var/lib/pgsql/data/*')
+    sudo('/bin/rm -rf /disk/minv_tablespace/')
 
 
 def reset_db():
