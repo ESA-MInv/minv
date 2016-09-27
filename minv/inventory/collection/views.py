@@ -685,9 +685,9 @@ def configuration_view(request, mission, file_type):
             collection, POST=request.POST
         )
 
-        mapping_formsets_valid = all(map(
-            lambda f: f[1].is_valid(), mapping_formsets
-        ))
+        mapping_formsets_valid = all([
+            f[1].is_valid() for f in mapping_formsets
+        ])
 
         if configuration_form.is_valid() and mapping_formsets_valid:
             for key, value in configuration_form.cleaned_data.items():
@@ -698,8 +698,7 @@ def configuration_view(request, mission, file_type):
                 for form in mapping_formset:
                     if form.is_valid():
                         data = form.cleaned_data
-                        print data, type(data)
-                        if data["DELETE"] or not data["index_file_key"]:
+                        if data.get("DELETE") or not data.get("index_file_key"):
                             continue
                         mapping[data["search_key"]] = data["index_file_key"]
 
