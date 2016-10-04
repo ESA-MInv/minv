@@ -50,7 +50,7 @@ def backup(logs=False, config=False, app=False, diff=None, incr=None,
 
     if diff and incr:
         raise BackupError(
-            "Differential and incremental backups are mutially exclusive."
+            "Differential and incremental backups are mutually exclusive."
         )
 
     timestamp = now().strftime("%Y%m%d-%H%M%S")
@@ -153,7 +153,7 @@ def _restore_collection(in_zip, mission, file_type):
         logger.info("Restored configuration for collection %s" % collection)
     else:
         logger.warn(
-            "Could not restore global configuration due to errors:\n%s"
+            "Could not restore collection configuration due to errors:\n%s"
             % ("\n".join(errors))
         )
 
