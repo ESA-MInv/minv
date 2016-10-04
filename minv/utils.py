@@ -33,11 +33,11 @@ class Timer(object):
         return self._stop - self._start
 
 
-def safe_makedirs(path):
+def safe_makedirs(path, mode=0770):
     """ Safely create a diretory path, ignoring errors when it already exists.
     """
     try:
-        os.makedirs(path)
+        os.makedirs(path, mode)
     except OSError as error:
         # propagate any exception other than the error indicating that the
         # directories already exist

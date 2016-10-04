@@ -19,6 +19,7 @@ from django.contrib.gis.geos import MultiPolygon, Polygon, Point
 
 from minv.inventory import models
 from minv.geom_utils import fix_footprint, EmptyMultiPolygon
+from minv.utils import safe_makedirs
 
 
 logger = logging.getLogger(__name__)
@@ -94,11 +95,7 @@ def ingest(mission, file_type, url, index_file_name):
         )
 
     for dir_path in (pending_dir, ingested_dir, failed_dir):
-        try:
-            os.makedirs(dir_path)
-        except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                raise
+        safe_makedirs(dir_path)
 
     path = join(pending_dir, index_file_name)
     if not exists(path):
