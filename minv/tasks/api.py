@@ -80,8 +80,6 @@ def schedule(task, when, arguments):
     models.ScheduledJob.objects.create(
         task=task, when=when, arguments=json.dumps(arguments)
     )
-    # import here to resolve circular import issue
-    from minv.tasks.daemon import send_reload_schedule
     send_reload_schedule()
 
 
@@ -93,9 +91,13 @@ def schedule_many(many):
         models.ScheduledJob.objects.create(
             task=task, when=when, arguments=json.dumps(arguments)
         )
-    # import here to resolve circular import issue
-    from minv.tasks.daemon import send_reload_schedule
     send_reload_schedule()
+
+
+def send_reload_schedule():
+    # import here to resolve circular import issue
+    from minv.tasks import daemon
+    daemon.send_reload_schedule()
 
 
 def restart_job(job_or_uuid):
