@@ -63,3 +63,10 @@ for username, groupname in ugs:
         pass
 
 EOF
+
+# add minv alias
+if ! grep -Fxq "alias minv='/usr/bin/minv_'" /home/vagrant/.bashrc ; then
+cat <<EOF >> /home/vagrant/.bashrc
+alias minv='/usr/bin/minv_'
+EOF
+fi
