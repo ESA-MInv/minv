@@ -4,6 +4,10 @@ from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.core.validators import ValidationError, RegexValidator
 from django.forms.formsets import formset_factory
+from django.forms.util import flatatt
+from django.utils.encoding import force_text
+from django.utils.html import format_html
+from django.utils.datastructures import MultiValueDict, MergeDict
 
 from minv.inventory import models as inventory_models
 
@@ -44,12 +48,49 @@ class RangeWidget(ClearableWidgetMixIn, forms.MultiWidget):
             rendered_widgets[0], rendered_widgets[1]
         )
 
+# This fixes issues when rendering forms with RangeFields as_hidden
+
+
+class MultipleHiddenInput(forms.HiddenInput):
+    """
+    A widget that handles <input type="hidden"> for fields that have a list
+    of values.
+    """
+    def __init__(self, attrs=None, choices=()):
+        super(MultipleHiddenInput, self).__init__(attrs)
+        # choices can be any iterable
+        self.choices = choices
+
+    def render(self, name, value, attrs=None, choices=()):
+        if value is None:
+            value = []
+        final_attrs = self.build_attrs(attrs, type=self.input_type, name=name)
+        id_ = final_attrs.get('id', None)
+        inputs = []
+        for i, v in enumerate(value):
+            input_attrs = dict(value=force_text(v), **final_attrs)
+            if id_:
+                # An ID attribute was given. Add a numeric index as a suffix
+                # so that the inputs don't all have the same ID attribute.
+                input_attrs['id'] = '%s_%s' % (id_, i)
+
+            input_attrs['name'] = '%s_%s' % (input_attrs['name'], i)
+            inputs.append(format_html('<input{0} />', flatatt(input_attrs)))
+        return mark_safe('\n'.join(inputs))
+
+    def value_from_datadict(self, data, files, name):
+        if isinstance(data, (MultiValueDict, MergeDict)):
+            return data.getlist(name)
+        return data.get(name, None)
+
 
 class RangeField(forms.MultiValueField):
     default_error_messages = {
         'invalid_start': _(u'Enter a valid start value.'),
         'invalid_end': _(u'Enter a valid end value.'),
     }
+
+    hidden_widget = MultipleHiddenInput
 
     def __init__(self, field_class, widget=forms.TextInput, *args, **kwargs):
         if 'initial' not in kwargs:
@@ -105,6 +146,8 @@ class BBoxWidget(forms.MultiWidget):
 
 
 class BBoxField(forms.MultiValueField):
+    hidden_widget = MultipleHiddenInput
+
     def __init__(self, field_class, widget=forms.TextInput, *args, **kwargs):
         if 'initial' not in kwargs:
             kwargs['initial'] = ['', '', '', '']
