@@ -62,8 +62,6 @@ def search(collection, filters=None, queryset=None, area_is_footprint=True):
                         key_low = key
                         key_high = key
 
-                    print key_low, key_high
-
                     filter_ = {
                         "%s__lte" % key_low: high, "%s__gte" % key_high: low
                     }
@@ -153,7 +151,6 @@ class AlignmentQuerySet(object):
         cursor = connection.cursor()
         cursor.execute(query)
         for row in cursor:
-            print row
             checksums = row[3:]
             yield {
                 "filename": row[0],
