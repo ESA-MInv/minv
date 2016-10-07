@@ -9,11 +9,27 @@ from minv.commands import MinvCommand
 from minv.utils import parse_duration, total_seconds
 from minv.inventory import models
 from minv.tasks import models as task_models
-from minv.tasks.api import schedule_many
+from minv.tasks.api import schedule_many, send_reload_schedule
 
 
 class Command(MinvCommand):
     option_list = BaseCommand.option_list + (
+        make_option("-c", "--create", dest="mode",
+            action="store_const", const="create", default="create",
+            help="Set the mode to 'create' (the default). Used to create new "
+                 "scheduled tasks"
+        ),
+        make_option("-r", "--remove", dest="mode",
+            action="store_const", const="remove", default="create",
+            help="Set the mode to 'remove'. Used to remove scheduled tasks."
+        ),
+
+        make_option("-t", "--task", dest="task",
+            default="harvest",
+            help="The task to schedule. Defaults to 'harvest', other options "
+                 "are 'export'."
+        ),
+
         make_option("-a", "--all", dest="all",
             action="store_true", default=False,
             help="Schedule all locations from all collections."
@@ -31,24 +47,20 @@ class Command(MinvCommand):
                 "period expressions. e.g: PT5M"
             )
         ),
-        make_option("-t", "--task", dest="task",
-            default="harvest",
-            help="The task to schedule. Defaults to 'harvest', other options "
-                 "are 'export' and 'backup'."
-        )
     )
 
     require_group = "minv_g_operators"
 
     args = (
-        '-a | ( MISSION/FILE-TYPE [ -u <url> ] ) '
+        '[ -c | -r ] [ -t <task-name> ] -a | ( MISSION/FILE-TYPE [ -u <url> ] ) '
         '[ -n | -i <duration-string> ]'
     )
 
     help = (
-        'Schedule the harvesting of a collections harvesting locations. '
-        'By default, the jobs are scheduled in the time specified in the '
-        'collections "harvesting_interval" configuration. '
+        'Schedule an export or harvesting task or remove such a '
+        'scheduled task. Once run, the jobs are repeated in the configured '
+        'timespan depending on the task: "export_interval" and '
+        '"harvest_interval" in the collections configuration. '
         'Requires membership of group "minv_g_operators".'
     )
 
@@ -58,14 +70,39 @@ class Command(MinvCommand):
         if task not in ("harvest", "export", "backup"):
             raise CommandError("Invalid task name '%s'" % task)
 
-        if task == "harvest":
-            return self.handle_harvest(*args, **options)
-        elif task == "export":
-            return self.handle_export(*args, **options)
-        else:
-            raise CommandError("Backup not implemented.")
+        mode = options.pop("mode")
 
-    def handle_harvest(self, *args, **options):
+        # get the duration when the task shall be scheduled
+        if options.get("now"):
+            interval = timedelta(0.0)
+        elif options.get("in"):
+            interval = parse_duration(options["in"])
+        else:
+            # get the harvesting interval from collection configuration
+            interval = None
+
+        if task == "harvest":
+            items = self.handle_harvest(mode, interval, *args, **options)
+        elif task == "export":
+            items = self.handle_export(mode, interval, *args, **options)
+        else:
+            raise CommandError("Unknown task '%s'." % task)
+
+        # inform the daemon
+        try:
+            if items:
+                schedule_many(items)
+            else:
+                send_reload_schedule()
+        except Exception as exc:
+            if options.get("traceback"):
+                raise
+            raise CommandError(
+                "Failed to send 'reload' message to daemon. Error was '%s'"
+                % exc
+            )
+
+    def handle_harvest(self, mode, interval, *args, **options):
         if options.get("all"):
             locations = list(models.Location.objects.all())
 
@@ -73,7 +110,9 @@ class Command(MinvCommand):
             try:
                 mission, file_type = args[0].split("/")
             except:
-                raise CommandError("Invalid collection specifier '%s'" % args[0])
+                raise CommandError(
+                    "Invalid collection specifier '%s'" % args[0]
+                )
 
             try:
                 collection = models.Collection.objects.get(
@@ -93,23 +132,15 @@ class Command(MinvCommand):
             else:
                 locations = list(collection.locations.all())
 
-        # get the duration when the harvest shall be scheduled
-        if options.get("now"):
-            interval = timedelta(0.0)
-        elif options.get("in"):
-            interval = parse_duration(options["in"])
-        else:
-            # get the harvesting interval from collection configuration
-            interval = None
-
         # remove all scheduled items that fit the current one
-        scheduled_jobs = set(task_models.ScheduledJob.objects.all())
+        scheduled_jobs = set(
+            task_models.ScheduledJob.objects.filter(task="harvest")
+        )
         for location in locations:
             to_delete_jobs = set([
                 scheduled_job
                 for scheduled_job in scheduled_jobs
                 if
-                scheduled_job.task == "harvest" and
                 scheduled_job.argument_values.get("mission") ==
                 location.collection.mission and
                 scheduled_job.argument_values.get("file_type") ==
@@ -119,48 +150,41 @@ class Command(MinvCommand):
 
             for scheduled_job in to_delete_jobs:
                 args = scheduled_job.argument_values
-                print(
-                    "Removing previous scheduled job for "
+                self.info(
+                    "Removing scheduled job for "
                     "{mission}/{file_type} {url}".format(**args)
                 )
                 scheduled_job.delete()
 
             scheduled_jobs -= to_delete_jobs
 
-        current_datetime = now()
+        if mode == "create":
+            # create a scheduled item for each location
+            items = []
+            current_datetime = now()
 
-        # create a scheduled item for each location
-        items = []
-        for location in locations:
-            args = {
-                "mission": location.collection.mission,
-                "file_type": location.collection.file_type,
-                "url": location.url,
-                "reschedule": True
-            }
+            for location in locations:
+                args = {
+                    "mission": location.collection.mission,
+                    "file_type": location.collection.file_type,
+                    "url": location.url,
+                    "reschedule": True
+                }
 
-            if interval is None:
-                interval = location.collection.configuration.harvest_interval
+                if interval is None:
+                    interval = location.collection.configuration.harvest_interval
 
-            print(
-                "Creating scheduled job for %s/%s %s in %.1f seconds." % (
-                    args["mission"], args["file_type"], args["url"],
-                    total_seconds(interval)
+                self.info(
+                    "Creating scheduled job for %s/%s %s in %.1f seconds." % (
+                        args["mission"], args["file_type"], args["url"],
+                        total_seconds(interval)
+                    )
                 )
-            )
-            items.append(("harvest", current_datetime + interval, args))
+                items.append(("harvest", current_datetime + interval, args))
 
-        # inform the daemon
-        try:
-            schedule_many(items)
-        except Exception as exc:
-            if options.get("traceback"):
-                raise
-            raise CommandError(
-                "Failed to send 'reload' message to daemon. Error was '%s'" % exc
-            )
+                return items
 
-    def handle_export(self, *args, **options):
+    def handle_export(self, mode, interval, *args, **options):
         if options.get("all"):
             collections = list(models.Collection.objects.all())
 
@@ -181,23 +205,15 @@ class Command(MinvCommand):
                     mission, file_type
                 ))
 
-        # get the duration when the harvest shall be scheduled
-        if options.get("now"):
-            interval = timedelta(0.0)
-        elif options.get("in"):
-            interval = parse_duration(options["in"])
-        else:
-            # get the harvesting interval from collection configuration
-            interval = None
-
         # remove all scheduled items that fit the current one
-        scheduled_jobs = set(task_models.ScheduledJob.objects.all())
+        scheduled_jobs = set(
+            task_models.ScheduledJob.objects.filter(task="export")
+        )
         for collection in collections:
             to_delete_jobs = set([
                 scheduled_job
                 for scheduled_job in scheduled_jobs
                 if
-                scheduled_job.task == "export" and
                 scheduled_job.argument_values.get("mission") ==
                 collection.mission and
                 scheduled_job.argument_values.get("file_type") ==
@@ -206,42 +222,35 @@ class Command(MinvCommand):
 
             for scheduled_job in to_delete_jobs:
                 args = scheduled_job.argument_values
-                print(
-                    "Removing previous scheduled job for "
+                self.info(
+                    "Removing scheduled job for "
                     "{mission}/{file_type}".format(**args)
                 )
                 scheduled_job.delete()
 
             scheduled_jobs -= to_delete_jobs
 
-        current_datetime = now()
+        if mode == "create":
+            # create a scheduled item for each location
+            items = []
+            current_datetime = now()
 
-        # create a scheduled item for each location
-        items = []
-        for collection in collections:
-            args = {
-                "mission": collection.mission,
-                "file_type": collection.file_type,
-                "reschedule": True
-            }
+            for collection in collections:
+                args = {
+                    "mission": collection.mission,
+                    "file_type": collection.file_type,
+                    "reschedule": True
+                }
 
-            if interval is None:
-                interval = collection.configuration.export_interval
+                if interval is None:
+                    interval = collection.configuration.export_interval
 
-            print(
-                "Creating scheduled job for %s/%s in %.1f seconds." % (
-                    args["mission"], args["file_type"],
-                    total_seconds(interval)
+                self.info(
+                    "Creating scheduled job for %s/%s in %.1f seconds." % (
+                        args["mission"], args["file_type"],
+                        total_seconds(interval)
+                    )
                 )
-            )
-            items.append(("export", current_datetime + interval, args))
+                items.append(("export", current_datetime + interval, args))
 
-        # inform the daemon
-        try:
-            schedule_many(items)
-        except Exception as exc:
-            if options.get("traceback"):
-                raise
-            raise CommandError(
-                "Failed to send 'reload' message to daemon. Error was '%s'" % exc
-            )
+            return items
