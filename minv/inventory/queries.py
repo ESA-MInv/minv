@@ -144,12 +144,13 @@ class AlignmentQuerySet(object):
             * ``annotations``: a :class:`QuerySet` with the actual annotations
 
         """
+        base_query, params = self._qs._as_sql(connection)
         query = render_to_string("inventory/collection/alignment.sql", {
-            "locations": self._locations, "base_query": self._qs.query
+            "locations": self._locations, "base_query": base_query
         })
 
         cursor = connection.cursor()
-        cursor.execute(query)
+        cursor.execute(query, params)
         for row in cursor:
             checksums = row[3:]
             yield {
