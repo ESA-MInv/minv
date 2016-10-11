@@ -1,5 +1,6 @@
 import os
-from os.path import join, basename, getmtime, exists
+from os.path import join, basename, getmtime, exists, isfile
+import sys
 from zipfile import ZipFile
 import glob
 from contextlib import closing
@@ -33,6 +34,16 @@ logger = logging.getLogger(__name__)
 
 class BackupError(Exception):
     pass
+
+
+def get_available_backups():
+    print os.listdir(BASE_PATH)
+    return [
+        (path, "incremental" if "incr" in path else
+            "differential" if "diff" in path else "full")
+        for path in os.listdir(BASE_PATH)
+        if isfile(join(BASE_PATH, path))
+    ]
 
 
 @task
@@ -71,12 +82,14 @@ def backup(logs=False, config=False, app=False, diff=None, incr=None,
 
     try:
         backupper.perform(out_path, timestamp)
+        os.chmod(out_path, 0660)
     except Exception:
+        exc_info = sys.exc_info()
         try:
             os.unlink(out_path)
         except OSError:
             pass
-        raise
+        raise exc_info[0], exc_info[1], exc_info[2]
 
     return out_path
 

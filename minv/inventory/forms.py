@@ -12,6 +12,12 @@ from django.utils.datastructures import MultiValueDict, MergeDict
 from minv.inventory import models as inventory_models
 
 
+DURATION_REGEX = (
+    "P(?=\w*\d)(?:\d+Y|Y)?(?:\d+M|M)?(?:\d+W|W)?(?:\d+D|D)?(?:T(?:\d+H|H)?"
+    "(?:\d+M|M)?(?:\d+(?:\.\d{1,2})?S|S)?)?$"
+)
+
+
 attrs = {"class": "form-control input-sm"}
 float_attrs = {"class": "form-control input-sm", "step": "any"}
 date_attrs = {
@@ -207,35 +213,41 @@ class TypeAheadWidget(forms.TextInput):
 
 
 class BackupForm(forms.Form):
-    backup_type = forms.ChoiceField(
-        choices=(
-            ("full", "full"), ("incremental", "incremental"),
-            ("decremental", "decremental")
-        ),
-        widget=forms.Select(attrs=attrs)
-    )
-    subject = forms.MultipleChoiceField(
-        choices=(
-            ("application", "application"), ("configuration", "configuration"),
-            ("logfiles", "logfiles")
-        ),
-        widget=forms.CheckboxSelectMultiple
-    )
+    def __init__(self, available_backups, *args, **kwargs):
+        super(BackupForm, self).__init__(*args, **kwargs)
+        self.fields["backup_type"] = forms.ChoiceField(
+            choices=(
+                ("full", "full"), ("incremental", "incremental"),
+                ("differential", "differential")
+            ),
+            widget=forms.Select(attrs=attrs)
+        )
+        self.fields["interval"] = forms.CharField(required=False,
+            widget=ClearableTextInput(attrs=attrs),
+            validators=[RegexValidator(DURATION_REGEX)]
+        )
+        self.fields["differential_file"] = forms.ChoiceField(
+            required=False,
+            choices=available_backups,
+            widget=forms.Select(attrs=attrs)
+        )
+        self.fields["subject"] = forms.MultipleChoiceField(
+            choices=(
+                ("application", "application"),
+                ("configuration", "configuration"),
+                ("logfiles", "logfiles")
+            ),
+            widget=forms.CheckboxSelectMultiple
+        )
 
 
 class RestoreForm(forms.Form):
-    backup = forms.ChoiceField(
-        choices=(
-            ("backup_20150906.dat", "backup_20150906.dat (full)"),
-            ("backup_20150907.dat", "backup_20150907.dat (incremental)"),
-            ("backup_20150908.dat", "backup_20150908.dat (incremental)"),
-            ("backup_20150909.dat", "backup_20150909.dat (incremental)"),
-            ("backup_20150910.dat", "backup_20150910.dat (decremental)"),
-            ("backup_20150911.dat", "backup_20150911.dat (full)"),
-            ("backup_20150912.dat", "backup_20150912.dat (incremental)"),
-        ),
-        widget=forms.Select(attrs=attrs)
-    )
+    def __init__(self, available_backups, *args, **kwargs):
+        super(RestoreForm, self).__init__(*args, **kwargs)
+        self.fields["backup"] = forms.ChoiceField(
+            choices=available_backups,
+            widget=forms.Select(attrs=attrs)
+        )
 
 
 class PaginationForm(forms.Form):
@@ -417,11 +429,6 @@ class ImportForm(ImportExportBaseForm):
             choices=(((None, "---"),) + available_packages),
             widget=forms.Select(attrs={"class": "form-control"})
         )
-
-DURATION_REGEX = (
-    "P(?=\w*\d)(?:\d+Y|Y)?(?:\d+M|M)?(?:\d+W|W)?(?:\d+D|D)?(?:T(?:\d+H|H)?"
-    "(?:\d+M|M)?(?:\d+(?:\.\d{1,2})?S|S)?)?$"
-)
 
 list_inline = dict(attrs)
 list_inline["class"] = "list-inline"
