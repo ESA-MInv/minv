@@ -1,4 +1,4 @@
-from os import listdir
+import os
 from os.path import join, basename
 import zipfile
 import json
@@ -107,6 +107,7 @@ def _export_collection_locked(collection, filename, configuration, data):
                         )
                     )
 
+    os.chmod(filename, 0660)
     return filename
 
 
@@ -213,6 +214,6 @@ def list_exports(mission, file_type):
         mission=mission, file_type=file_type
     )
     try:
-        return listdir(join(collection.data_dir, "exports"))
+        return os.listdir(join(collection.data_dir, "exports"))
     except OSError:
         return []
