@@ -1,3 +1,6 @@
+# ------------------------------------------------------------------------------
+#
+# Project: Master Inventory <http://github.com/ESA-MInv/minv>
 # Authors: Fabian Schindler <fabian.schindler@eox.at>
 #
 # ------------------------------------------------------------------------------
