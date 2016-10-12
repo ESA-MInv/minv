@@ -33,7 +33,7 @@ from signal import SIGTERM, SIGINT, signal
 import logging
 import errno
 from multiprocessing.connection import Listener, Client
-from multiprocessing.pool import ThreadPool, Pool
+from multiprocessing.pool import ThreadPool
 
 from minv.config import GlobalReader
 from minv.tasks.scheduler import Scheduler
@@ -60,8 +60,6 @@ class Daemon(object):
             # setup signal handlers for shutdown or immediate termination
             signal(SIGINT, self.shutdown)
             signal(SIGTERM, self.terminate)
-
-            reader = GlobalReader()
 
             registry.initialize()
 
