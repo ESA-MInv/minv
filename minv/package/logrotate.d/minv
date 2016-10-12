@@ -4,23 +4,5 @@
     delaycompress
     rotate 5
     daily
-    create 0640 minv minv
-}
-
-/var/log/minv/query.log {
-    missingok
-    notifempty
-    delaycompress
-    rotate 5
-    daily
-    create 0640 minv minv
-}
-
-/var/log/minv/commands.log {
-    missingok
-    notifempty
-    delaycompress
-    rotate 5
-    monthly
-    create 0640 minv minv
+    create 0660 minv minv
 }
