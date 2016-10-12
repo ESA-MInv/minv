@@ -237,13 +237,13 @@ def nominal(version=minv.__version__):
     initialize()
 
 
-def quick():
+def quick(version=minv.__version__):
     archive()
     build()
     upload()
 
-    sudo("yum remove -y minv")
-    sudo("yum install -y minv-%s-1.noarch.rpm" % minv.__version__)
+    # sudo("yum remove -y minv")
+    sudo("yum reinstall -y minv-%s-1.noarch.rpm" % version)
 
 
 def populate():
