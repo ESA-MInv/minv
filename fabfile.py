@@ -81,14 +81,14 @@ def archive(version=minv.__version__):
         )
 
 
-def build(version=minv.__version__):
+def build(version=minv.__version__, release="1"):
     with vagrant(env.builder_path):
         run("cp rpmbuild/SOURCES/MInv-{version}.tar.gz .".format(
             version=version
         ))
         run("tar -xzf MInv-{version}.tar.gz".format(version=version))
         with cd("MInv-{version}".format(version=version)):
-            run("python setup.py bdist_rpm")
+            run("python setup.py bdist_rpm --release %s" % release)
             run("cp dist/minv-{version}*rpm ../rpmbuild/RPMS/".format(
                 version=version
             ))
@@ -142,11 +142,11 @@ def upload(version=minv.__version__):
             put(rpm, "")
 
 
-def install(version=minv.__version__):
+def install(version=minv.__version__, release="1"):
     """ Implementation of TP-MINV-NOM-000-00 Step 1.2
     """
     sudo("yum install -y %s" % " ".join(RPMS))
-    sudo("yum install -y minv-%s-1.noarch.rpm" % version)
+    sudo("yum install -y minv-%s-%s.noarch.rpm" % (version, release))
     sudo(
         'printf "abcdefghijklmnopq\nabcdefghijklmnopq" '
         '| sh minv_install_postgresql.sh --tablespace /disk/minv_tablespace/'
@@ -185,7 +185,7 @@ def initialize():
     with settings(prompts={'Password: ': 'test', 'Password (again): ': 'test'}):
         for user, group in USER_GROUPS:
             try:
-                sudo("useradd %s -G %s,minv" % (user, group))
+                sudo("useradd %s -G %s,minv -g minv -N" % (user, group))
             except:
                 pass
             sudo('minv_ createuser %s -g %s' % (user, group), user="minv")
@@ -220,16 +220,16 @@ def initialize_updates():
         sudo("cp %s /home/minv-app-administrator/TDS4" % basename(conf))
 
 
-def nominal(version=minv.__version__):
+def nominal(version=minv.__version__, release="1"):
     archive(version)
-    build(version)
+    build(version, release)
     upload(version)
 
     try:
         uninstall()
     except:
         pass
-    install(version)
+    install(version, release)
     config()
     setup()
     run_services()
@@ -258,10 +258,10 @@ def perf_setup():
 
     sudo(
         "minv_ collection Perf/TenM "
-        "-o https://data.eox.at/minv/meta/OADS1/Perf/TenM/ "
-        "-o https://data.eox.at/minv/meta/OADS2/Perf/TenM/ "
-        "-o https://data.eox.at/minv/meta/OADS3/Perf/TenM/ "
-        "-o https://data.eox.at/minv/meta/OADS4/Perf/TenM/",
+        "-o https://data.eox.at/minv/meta/PERFOADS1/Perf/TenM/ "
+        "-o https://data.eox.at/minv/meta/PERFOADS2/Perf/TenM/ "
+        "-o https://data.eox.at/minv/meta/PERFOADS3/Perf/TenM/ "
+        "-o https://data.eox.at/minv/meta/PERFOADS4/Perf/TenM/",
         user="minv"
     )
     sudo("minv_ config Perf/TenM -i TDS5-MINV-PER-COL.conf")
