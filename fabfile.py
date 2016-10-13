@@ -189,10 +189,8 @@ def initialize():
 
     with settings(prompts={'Password: ': 'test', 'Password (again): ': 'test'}):
         for user, group in USER_GROUPS:
-            try:
-                sudo("useradd %s -G %s,minv -g minv -N" % (user, group))
-            except:
-                pass
+            sudo("useradd %s -G %s,minv -g minv -N || true" % (user, group))
+            sudo("chmod g+rwx /home/%s" % user)
             sudo('minv_ createuser %s -g %s' % (user, group), user="minv")
 
     # upload script to create collections
