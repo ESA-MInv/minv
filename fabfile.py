@@ -130,11 +130,16 @@ def reset_db():
     )
 
 
-def upload(version=minv.__version__):
+def upload(version=minv.__version__, release="1"):
     """ Implementation of TP-MINV-NOM-000-00 Step 1.1
     """
     version = version or minv.__version__
-    put(join(env.builder_path, "build/RPMS/minv-%s-1.noarch.rpm" % version), "")
+    put(
+        join(
+            env.builder_path,
+            "build/RPMS/minv-%s-%s.noarch.rpm" % (version, release)
+        ), ""
+    )
     put("minv/package/minv_install_postgresql.sh", "")
     sudo("chmod a+x minv_install_postgresql.sh")
     with lcd(env.ink_path):
@@ -223,7 +228,7 @@ def initialize_updates():
 def nominal(version=minv.__version__, release="1"):
     archive(version)
     build(version, release)
-    upload(version)
+    upload(version, release)
 
     try:
         uninstall()
@@ -237,13 +242,13 @@ def nominal(version=minv.__version__, release="1"):
     initialize()
 
 
-def quick(version=minv.__version__):
+def quick(version=minv.__version__, release="1"):
     archive()
-    build()
-    upload()
+    build(version, release)
+    upload(version, release)
 
     # sudo("yum remove -y minv")
-    sudo("yum reinstall -y minv-%s-1.noarch.rpm" % version)
+    sudo("yum reinstall -y minv-%s-%s.noarch.rpm" % (version, release))
 
 
 def populate():
