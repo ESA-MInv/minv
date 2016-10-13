@@ -28,7 +28,6 @@
 
 import csv
 import os
-import errno
 from os.path import basename, exists, join, dirname
 from datetime import datetime
 from urlparse import urlparse
