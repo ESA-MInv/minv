@@ -32,7 +32,7 @@ import sys
 from zipfile import ZipFile
 import glob
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import shutil
 import logging
@@ -320,8 +320,13 @@ class DifferentialBackup(FullBackup):
 
     def decide_file(self, path, zip_path):
         try:
-            info = self.diff_zip.getinfo(zip_path)
-            datetime(*info.date_time) < datetime.fromtimestamp(getmtime(path))
+            ifo = self.diff_zip.getinfo(zip_path)
+            # adjust the time of the ZIP-entry, as the datetimes are somehow
+            # lower than outside (1 second + the not stored milliseconds)
+            dt_adjusted = (datetime(*ifo.date_time) + timedelta(seconds=2))
+            return (
+                datetime.fromtimestamp(getmtime(path)) > dt_adjusted
+            )
         except KeyError:
             return True
 
