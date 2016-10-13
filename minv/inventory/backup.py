@@ -149,24 +149,35 @@ def restore(in_path):
                     )
 
         if manifest["config"]:
-            # restore the global configuration
-            errors = check_global_configuration(
-                GlobalReader.from_fileobject(in_zip.open("config/minv.conf"))
-            )
-            if not errors:
-                backup_config("/etc/minv/minv.conf")
-                _restore_file(in_zip, "config/minv.conf", "/etc/minv/minv.conf")
-                logger.info("Restored global configuration.")
-            else:
-                logger.warn(
-                    "Could not restore global configuration due to errors:\n%s"
-                    % ("\n".join(errors))
+            # restore the global configuration if it is stored in the backup
+            if "config/minv.conf" in names:
+                errors = check_global_configuration(
+                    GlobalReader.from_fileobject(in_zip.open("config/minv.conf"))
                 )
+                if not errors:
+                    backup_config("/etc/minv/minv.conf")
+                    _restore_file(
+                        in_zip, "config/minv.conf", "/etc/minv/minv.conf"
+                    )
+                    logger.info("Restored global configuration.")
+                else:
+                    logger.warn(
+                        "Could not restore global configuration due to errors:"
+                        "\n%s" % ("\n".join(errors))
+                    )
 
-            # restore all the collections configurations
+            # restore all the collections included
             for name in names:
-                if name.startswith("config/collections/"):
-                    _restore_collection(in_zip, *name.split("/")[2:4])
+                if name.startswith("config/collections/") \
+                        and name.endswith("collection.conf"):
+                    try:
+                        mission, file_type = name.split("/")[2:4]
+                    except:
+                        logger.error(
+                            "Invalid collection configuration path '%s'" % name
+                        )
+                    else:
+                        _restore_collection(in_zip, mission, file_type)
 
 
 def _restore_collection(in_zip, mission, file_type):
@@ -219,8 +230,10 @@ class FullBackup(object):
         return True
 
     def backup_file(self, path, zip_path, out_zip):
-        if self.decide_file(path, zip_path):
+        decision = self.decide_file(path, zip_path)
+        if decision:
             out_zip.write(path, zip_path)
+        return decision
 
     def get_manifest(self):
         return {"type": "full"}
@@ -247,22 +260,24 @@ class FullBackup(object):
 
                 for collection in models.Collection.objects.all():
                     # backup the configuration
-                    self.backup_file(
+                    included = self.backup_file(
                         collection.config_path,
                         "config/collections/%s/collection.conf" % collection,
                         out_zip
                     )
-                    # backup the locations
-                    out_zip.writestr(
-                        "config/collections/%s/locations.json" % collection,
-                        json.dumps([
-                            {
-                                "url": location.url,
-                                "location_type": location.location_type
-                            }
-                            for location in collection.locations.all()
-                        ])
-                    )
+                    # backup the locations if the config file was included
+                    if included:
+                        out_zip.writestr(
+                            "config/collections/%s/locations.json" % collection,
+                            json.dumps([
+                                {
+                                    "url": location.url,
+                                    "location_type": location.location_type
+                                }
+                                for location in collection.locations.all()
+                            ])
+                        )
+
             if self.app:
                 # TODO: decide.
                 pass
