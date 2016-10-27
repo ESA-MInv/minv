@@ -158,6 +158,15 @@ class AlignmentQuerySet(object):
         ).values("filename").annotate(
             Min("checksum"), Count("annotations")
         )
+        self._length = None
+
+    def _make_query(self, count=False):
+        base_query, params = self._qs._as_sql(connection)
+        query = render_to_string("inventory/collection/alignment.sql", {
+            "locations": self._locations, "base_query": base_query,
+            "count": count
+        })
+        return query, params
 
     def __iter__(self):
         """ Executes the underlying query. Yields a :class:`dict` for each
@@ -172,21 +181,20 @@ class AlignmentQuerySet(object):
             * ``annotations``: a :class:`QuerySet` with the actual annotations
 
         """
-        base_query, params = self._qs._as_sql(connection)
-        query = render_to_string("inventory/collection/alignment.sql", {
-            "locations": self._locations, "base_query": base_query
-        })
+        query, params = self._make_query()
+
+        location_count = len(self._locations)
 
         cursor = connection.cursor()
         cursor.execute(query, params)
         for row in cursor:
-            checksums = row[3:]
+            checksums = row[3:3+location_count]
             yield {
                 "filename": row[0],
                 "checksum_mismatch": bool(
                     len(set([c for c in checksums if c is not None]))-1
                 ),
-                "incidences": checksums,
+                "incidences": zip(checksums, row[3+location_count:]),
                 "annotation_count": row[2],
                 "annotations": models.Annotation.objects.filter(
                     record__filename=row[0], record__location__in=self._locations
@@ -204,7 +212,12 @@ class AlignmentQuerySet(object):
     def __len__(self):
         """ Returns the size of the underlying :class:`QuerySet`.
         """
-        return self._qs.count()
+        if self._length is None:
+            query, params = self._make_query(True)
+            cursor = connection.cursor()
+            cursor.execute(query, params)
+            self._length = cursor.fetchone()[0]
+        return self._length
 
     def __getitem__(self, slc):
         """ Passes the slice to the underlying :class:`QuerySet`.

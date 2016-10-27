@@ -59,7 +59,7 @@
           <tr>
             <th>Filename</th>
           {% for location in locations %}
-            <th class="rotate"><div><span>{{ location }}</span></div></th>
+            <th class="rotate"><div><span><small>{{ location }}</small></span></div></th>
           {% endfor %}
             <th style="text-align: right">Annotations</th>
           </tr>
@@ -70,9 +70,9 @@
           <tr>
             <th>
               <a href="{% url 'inventory:collection:record' mission=collection.mission file_type=collection.file_type filename=record.filename%}">{{ record.filename }}</a></th>
-            {% for i in record.incidences %}
+            {% for checksum, exists in record.incidences %}
               <td class="mark-inside">
-              {% if i %}
+              {% if exists %}
                 {% if record.checksum_mismatch %}
                   <span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span>
                 {% else %}
