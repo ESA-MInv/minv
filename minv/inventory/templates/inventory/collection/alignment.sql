@@ -1,5 +1,5 @@
 SELECT
-    {% if not count %}
+  {% if not count %}
     base.filename AS filename, 
     base.checksum__min AS checksum,
     base.annotations__count AS annotation_count,
@@ -11,9 +11,9 @@ SELECT
     {% for location in locations %}
     l{{ location.pk }}.filename IS NOT NULL{% if not forloop.last %},{% endif %}
     {% endfor %}
-    {% else %}
+  {% else %}
     COUNT(*) AS count
-    {% endif %}
+  {% endif %}
 FROM
   (
     {{ base_query|safe }}
