@@ -153,19 +153,32 @@ class AlignmentQuerySet(object):
     """
     def __init__(self, locations):
         self._locations = locations
-        self._qs = models.Record.objects.filter(
-            location__in=locations
+        self._filters = []
+        self._length = None
+        self._slice = None
+
+    def _make_query(self, count=False):
+        qs = models.Record.objects.filter(
+            location__in=self.locations
         ).values("filename").annotate(
             Min("checksum"), Count("annotations")
         )
-        self._length = None
 
-    def _make_query(self, count=False):
-        base_query, params = self._qs._as_sql(connection)
+        for args, kwargs in self._filters:
+            qs = qs.filter(*args, **kwargs)
+
+        limit = None
+        offset = None
+        if not count and self._slice:
+            limit = self._slice.stop - self._slice.start
+            offset = self._slice.start if self._slice.start > 0 else None
+
+        base_query, params = qs._as_sql(connection)
         query = render_to_string("inventory/collection/alignment.sql", {
             "locations": self._locations, "base_query": base_query,
-            "count": count
+            "count": count, "limit": limit, "offset": offset
         })
+
         return query, params
 
     def __iter__(self):
@@ -224,12 +237,13 @@ class AlignmentQuerySet(object):
         """
         if not isinstance(slc, slice):
             raise NotImplementedError("Index access is not supported.")
-        self._qs = self._qs[slc]
+        self._slice = slc
         return self
 
     def filter(self, *args, **kwargs):
         """ Passes filters to the underlying :class:`QuerySet`.
         :returns: self
         """
-        self._qs = self._qs.filter(*args, **kwargs)
+        self._filters.append((args, kwargs))
+        # self._qs = self._qs.filter(*args, **kwargs)
         return self

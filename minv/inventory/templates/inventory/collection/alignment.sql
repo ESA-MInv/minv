@@ -33,3 +33,9 @@ WHERE
     l{{ location.pk }}.filename IS NULL
     OR l{{ location.pk }}.checksum != base.checksum__min
 {% endfor %}
+{% if limit %}
+LIMIT {{ limit }}
+{% endif %}
+{% if offset %}
+OFFSET {{ offset }}
+{% endif %}
