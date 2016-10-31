@@ -98,6 +98,9 @@ class Collection(models.Model):
         return "%s/%s" % (self.mission, self.file_type)
 
     def get_metadata_field_mapping(self, url):
+        if isinstance(url, Location):
+            url = url.url
+
         mapping = self.configuration.get_section_dict(
             "metadata_mapping.%s" % url
         )
