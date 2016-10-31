@@ -48,9 +48,9 @@
     {% endif %}
 
     {% if not records %}
-      No missalignments were detected.
+      No misalignments were detected.
     {% else %}
-      <p>Search hit {{ records.paginator.count }} records, showing {{ records|length }}.</p>
+      <p>Detected {{ records.paginator.count }} misalignments, showing {{ records.object_list|length }}.</p>
 
       <table class="table table-striped table-condensed table-hover table-header-rotated">
         <colgroup>

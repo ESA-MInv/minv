@@ -27,6 +27,7 @@
 
 
 from datetime import datetime, timedelta
+from copy import deepcopy
 
 from django.template.loader import render_to_string
 from django.db import connection
@@ -164,12 +165,14 @@ class AlignmentQuerySet(object):
             Min("checksum"), Count("annotations")
         )
 
+        print self._locations, self._filters, self._length, self._slice
+
         for args, kwargs in self._filters:
             qs = qs.filter(*args, **kwargs)
 
         limit = None
         offset = None
-        if not count and self._slice:
+        if self._slice:
             limit = self._slice.stop - self._slice.start
             offset = self._slice.start if self._slice.start > 0 else None
 
@@ -231,11 +234,15 @@ class AlignmentQuerySet(object):
     def __len__(self):
         """ Returns the size of the underlying :class:`QuerySet`.
         """
+        if self._slice:
+            return self._slice.stop - self._slice.start
+
         if self._length is None:
             query, params = self._make_query(True)
             cursor = connection.cursor()
             cursor.execute(query, params)
             self._length = cursor.fetchone()[0]
+
         return self._length
 
     def __getitem__(self, slc):
@@ -243,13 +250,17 @@ class AlignmentQuerySet(object):
         """
         if not isinstance(slc, slice):
             raise NotImplementedError("Index access is not supported.")
-        self._slice = slc
-        return self
+
+        other = deepcopy(self)
+        other._slice = slc
+        other._length = None
+        return other
 
     def filter(self, *args, **kwargs):
         """ Passes filters to the underlying :class:`QuerySet`.
         :returns: self
         """
-        self._filters.append((args, kwargs))
+        other = deepcopy(self)
+        other._filters.append((args, kwargs))
         # self._qs = self._qs.filter(*args, **kwargs)
-        return self
+        return other
