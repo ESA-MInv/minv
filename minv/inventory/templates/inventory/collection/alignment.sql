@@ -33,6 +33,7 @@ WHERE
     l{{ location.pk }}.filename IS NULL
     OR l{{ location.pk }}.checksum != base.checksum__min
 {% endfor %}
+{% if not count %}ORDER BY base.filename{% endif %}
 {% if limit %}
 LIMIT {{ limit }}
 {% endif %}
