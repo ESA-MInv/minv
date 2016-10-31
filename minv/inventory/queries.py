@@ -202,11 +202,16 @@ class AlignmentQuerySet(object):
         cursor.execute(query, params)
         for row in cursor:
             checksums = row[3:3+location_count]
+
+            distinct_checksums = set([c for c in checksums if c is not None])
+            checksum_mismatch = False
+
+            if len(distinct_checksums) > 1:
+                checksum_mismatch = True
+
             yield {
                 "filename": row[0],
-                "checksum_mismatch": bool(
-                    len(set([c for c in checksums if c is not None]))-1
-                ),
+                "checksum_mismatch": checksum_mismatch,
                 "incidences": zip(checksums, row[3+location_count:]),
                 "annotation_count": row[2],
                 "annotations": models.Annotation.objects.filter(
