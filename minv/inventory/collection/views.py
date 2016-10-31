@@ -407,6 +407,15 @@ def record_view(request, mission, file_type, filename):
             if getattr(record, field) != getattr(reference_record, field):
                 differences.add(field)
 
+    distinct_checksums = set([
+        record.checksum for record in records
+        if record.checksum is not None
+    ])
+    checksum_mismatch = False
+
+    if len(distinct_checksums) > 1:
+        checksum_mismatch = True
+
     # TODO: make this in annotation_view
     if request.method == "POST":
         add_annotation_form = forms.AddAnnotationForm(
@@ -439,6 +448,7 @@ def record_view(request, mission, file_type, filename):
             "fields": display_fields,
             "locations": locations, "records": records,
             "differences": differences,
+            "checksum_mismatch": checksum_mismatch,
             "add_annotation_form": add_annotation_form
         }
     )

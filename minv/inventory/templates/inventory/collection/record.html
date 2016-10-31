@@ -4,8 +4,10 @@
 {% load inventory_extras %}
 
 {% block head %}
-{{ block.super }}
+<script src="{% static 'inventory/js/ol.js' %}"></script>
+<link rel="stylesheet" href="{% static 'inventory/css/ol.css' %}">
 <link rel="stylesheet" href="{% static 'inventory/css/alignment.css' %}"/>
+{{ block.super }}
 {% endblock %}
 
 
@@ -20,82 +22,152 @@
 
 <h4>{{ filename }}</h4>
 
-<table class="table table-striped table-condensed">
-  <colgroup>
-    <col style="width: 18em;">
-    <col style="width: auto">
-  </colgroup>
-  <thead>
-    <tr>
-      <th>Field</th>
-      <th>Value</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>Locations</td>
-      <td>
-        {% for location, record in locations.items %}
-          {% if record %}
-            {% if differences %}
-            <span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span>
-            {% else %}
-            <span class="glyphicon glyphicon-ok ok" aria-hidden="true"></span>
-            {% endif %}
-          {% else %}
-            <span class="glyphicon glyphicon-remove missing" aria-hidden="true"></span>
-          {% endif %}
-          {{ location }}
-          <br>
-        {% endfor %}
-      </td>
-    </tr>
-    {% localize off %}
-    {% for field_id, field_name in fields.items %}
-    <tr>
-      <th>{% if field_id in differences %}<span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span> {% endif %}{{ field_name }}</th>
-      {% if not field_id in differences %}
-        {% with records.0|get_display:field_id as field_value %}
-        <td>{% if field_value != None %}{{ field_value }}{% endif %}</td>
-        {% endwith %}
-      {% else %}
-        <td>
-          <table class="table table-condensed table-bordered table-nested">
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">Alignment</h3>
+  </div>
+  <div class="panel-body">
+    <table class="table table-bordered table-condensed">
+      <thead>
+        <tr>
+          {% for location, _ in locations.items %}
+          <th style="text-align: center; word-break: break-all;">{{ location }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
           {% for location, record in locations.items %}
-            {% if record %}<tr><th>{{ location }}</th><td>{{ record | get_display:field_id }}</td></tr>{% endif %}
+            <td style="text-align: center">
+            {% if record %}
+              {% if checksum_mismatch and record.checksum != None %}
+              <span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span>
+              {% elif record.checksum == None %}
+              <span class="glyphicon glyphicon-question-sign info" aria-hidden="true"></span>
+              {% else %}
+              <span class="glyphicon glyphicon-ok ok" aria-hidden="true"></span>
+              {% endif %}
+            {% else %}
+              <span class="glyphicon glyphicon-remove missing" aria-hidden="true"></span>
+            {% endif %}
+            </td>
           {% endfor %}
-          </table>
-        </td>
-      {% endif %}
-    </tr>
-    {% endfor %}
-    <tr>
-      <th>Annotations</th>
-      <td>
-      {% for location, record in locations.items %}
-        {% if record and record.annotations.exists %}
-          <b>{{ location }}</b>
-          {% for annotation in record.annotations.all %}
-          <form action="{% url 'inventory:collection:annotation_delete' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
-            {% csrf_token %}
-            <input type="hidden" name="annotation" value="{{ annotation.pk }}">
-            <pre>{{ annotation.text }} <button type="submit" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button></pre>
-          </form>
-          {% endfor %}
-        {% endif %}
-      {% endfor %}
-      </td>
-    </tr>
-    {% endlocalize %}
-  </tbody>
-</table>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
-<h5>Add Annotation</h5>
-<form class="form" action="{% url 'inventory:collection:annotation_add' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
-  {% csrf_token %}
-  {% render_form add_annotation_form %}
-  <button type="submit" class="btn btn-default">Add Annotation</button>
-</form>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">Metadata</h3>
+  </div>
+  <div class="panel-body">
+    <table class="table table-striped table-condensed">
+      <colgroup>
+        <col style="width: 18em;">
+        <col style="width: auto">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% localize off %}
+        {% for field_id, field_name in fields.items %}
+          {% if field_id != "scene_centre" and field_id != "footprint" %}
+            <tr>
+              <th>{% if field_id in differences %}<span class="glyphicon glyphicon-exclamation-sign warning" aria-hidden="true"></span> {% endif %}{{ field_name }}</th>
+              {% if not field_id in differences %}
+                {% with records.0|get_display:field_id as field_value %}
+                <td>{% if field_value != None %}{{ field_value }}{% endif %}</td>
+                {% endwith %}
+              {% else %}
+                <td>
+                  <table class="table table-condensed table-bordered table-nested">
+                  {% for location, record in locations.items %}
+                    {% if record %}
+                    <tr>
+                      <th>{{ location }}</th>
+                      <td>{{ record | get_display:field_id }}</td>
+                    </tr>
+                    {% endif %}
+                  {% endfor %}
+                  </table>
+                </td>
+              {% endif %}
+            </tr>
+          {% endif %}
+        {% endfor %}
+
+        <tr>
+          <th>Footprint/Scene Centre</th>
+          <td>
+            <div id="map" data-map data-map-footprints='[
+              {% for location, record in locations.items %}
+                {% if record.footprint %}
+                  "{{ record.footprint }}"
+                {% else %}
+                  null
+                {% endif %}
+                {% if not forloop.last %},{% endif %}
+              {% endfor %}]'
+              data-map-centres='[
+              {% for location, record in locations.items %}
+                {% if record.footprint %}
+                  "{{ record.footprint }}"
+                {% else %}
+                  null
+                {% endif %}
+                {% if not forloop.last %},{% endif %}
+              {% endfor %}]'
+              data-map-disable-bbox="true">
+            </div>
+          </td>
+        </tr>
+        {% endlocalize %}
+      </tbody>
+    </table>
+  </div> <!-- .panel-body -->
+</div> <!-- .panel -->
+
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">Annotations</h3>
+  </div>
+  <div class="panel-body">
+    <table class="table table-bordered table-condensed">
+      <tbody>
+        <tr>
+          <td>
+            {% for location, record in locations.items %}
+              {% if record and record.annotations.exists %}
+                <b>{{ location }}</b>
+                {% for annotation in record.annotations.all %}
+                <form action="{% url 'inventory:collection:annotation_delete' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="annotation" value="{{ annotation.pk }}">
+                  <pre>{{ annotation.text }} <button type="submit" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button></pre>
+                </form>
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h5>Add Annotation</h5>
+    <form class="form" action="{% url 'inventory:collection:annotation_add' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
+      {% csrf_token %}
+      {% render_form add_annotation_form %}
+      <button type="submit" class="btn btn-default">Add Annotation</button>
+    </form>
+  </div>
+</div>
 
 
 {% endblock %}

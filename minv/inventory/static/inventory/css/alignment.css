@@ -54,6 +54,10 @@ span.warning {
   color: #FFC107;
 }
 
+span.info {
+  color: #5bc0de;
+}
+
 .divider {
   height: 1px;
   margin: 9px 0;

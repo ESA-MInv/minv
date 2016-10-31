@@ -40,11 +40,12 @@ $(function() {
   });
 
   $('[data-map]').each(function() {
-    createMap(this);
+    var data = $(this).data();
+    createMap(this, data.mapDisableBbox, data.mapFootprints, data.mapCentres);
   });
 
 
-  function createMap(target) {
+  function createMap(target, disableDrawBBox, footprints, centres) {
     var $target = $(target);
     var $parent = $(target).parent();
     var projection = ol.proj.get('EPSG:4326');
@@ -127,70 +128,93 @@ $(function() {
       })
     });
 
-    var vectorSource = new ol.source.Vector();
-    map.addLayer(new ol.layer.Vector({source: vectorSource}));
+    if (footprints || centres) {
+      var featureSource = new ol.source.Vector();
+      map.addLayer(new ol.layer.Vector({source: featureSource}));
+      var format = new ol.format.WKT();
 
-    var dragBox = new ol.interaction.DragBox({
-      style: new ol.style.Style({
-        stroke: new ol.style.Stroke({
-          color: [0, 0, 255, 1]
-        })
-      })
-    });
+      var uniqueFootprints = (footprints || []).filter(function(item, pos, self) {
+        return item !== null && footprints.indexOf(item) == pos;
+      });
 
-    map.addControl(new EnableBBoxDraw());
-    map.addInteraction(dragBox);
-    dragBox.setActive(false);
+      var uniqueCentres = (centres || []).filter(function(item, pos, self) {
+        return item !== null && centres.indexOf(item) == pos;
+      });
 
-    // activate/deactivate bbox drawing
-    $target.find(".enable-draw").change(function() {
-      dragBox.setActive($(this).is(":checked"));
-    });
+      uniqueFootprints
+        .concat(uniqueCentres)
+        .forEach(function(wkt) {
+          featureSource.addFeature(format.readFeature(wkt));
+        });
 
-    // starting drawing a box
-    dragBox.on('boxstart', function() {
-      vectorSource.clear();
-    });
-
-    // finished drawing a box
-    dragBox.on('boxend', function() {
-      var geom = dragBox.getGeometry();
-      var feature = new ol.Feature();
-      feature.setGeometry(geom);
-      vectorSource.addFeature(feature);
-      var extent = geom.getExtent();
-      
-      $parent.find('#id_area_0').val(extent[1]);
-      $parent.find('#id_area_1').val(extent[0]);
-      $parent.find('#id_area_2').val(extent[3]);
-      $parent.find('#id_area_3').val(extent[2]);
-    });
-    
-    var onChange = function() {
-      vectorSource.clear();
-      var minlat = parseFloat($parent.find('#id_area_0').val());
-      var minlon = parseFloat($parent.find('#id_area_1').val());
-      var maxlat = parseFloat($parent.find('#id_area_2').val());
-      var maxlon = parseFloat($parent.find('#id_area_3').val());
-
-      if (isNaN(minlat) || isNaN(minlon) || isNaN(maxlat) || isNaN(maxlon)) {
-        return;
-      };
-
-      var polygon = new ol.geom.Polygon([[
-        [minlon, minlat], [maxlon, minlat], [maxlon, maxlat],
-        [minlon, maxlat], [minlon, minlat]
-      ]]);
-      var feature = new ol.Feature();
-      feature.setGeometry(polygon);
-      vectorSource.addFeature(feature);
+      map.getView().fitExtent(featureSource.getExtent(), map.getSize());
     }
 
-    // listen on changes in the adjacent inputs
-    $parent.find('input[type="text"]').change(onChange);
+    if (!disableDrawBBox) {
+      var vectorSource = new ol.source.Vector();
+      map.addLayer(new ol.layer.Vector({source: vectorSource}));
 
-    // get a BBox if already defined
-    onChange();
+      var dragBox = new ol.interaction.DragBox({
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: [0, 0, 255, 1]
+          })
+        })
+      });
+      map.addControl(new EnableBBoxDraw());
+      map.addInteraction(dragBox);
+      dragBox.setActive(false);  
+
+      // activate/deactivate bbox drawing
+      $target.find(".enable-draw").change(function() {
+        dragBox.setActive($(this).is(":checked"));
+      });
+
+      // starting drawing a box
+      dragBox.on('boxstart', function() {
+        vectorSource.clear();
+      });
+
+      // finished drawing a box
+      dragBox.on('boxend', function() {
+        var geom = dragBox.getGeometry();
+        var feature = new ol.Feature();
+        feature.setGeometry(geom);
+        vectorSource.addFeature(feature);
+        var extent = geom.getExtent();
+        
+        $parent.find('#id_area_0').val(extent[1]);
+        $parent.find('#id_area_1').val(extent[0]);
+        $parent.find('#id_area_2').val(extent[3]);
+        $parent.find('#id_area_3').val(extent[2]);
+      });
+      
+      var onChange = function() {
+        vectorSource.clear();
+        var minlat = parseFloat($parent.find('#id_area_0').val());
+        var minlon = parseFloat($parent.find('#id_area_1').val());
+        var maxlat = parseFloat($parent.find('#id_area_2').val());
+        var maxlon = parseFloat($parent.find('#id_area_3').val());
+
+        if (isNaN(minlat) || isNaN(minlon) || isNaN(maxlat) || isNaN(maxlon)) {
+          return;
+        };
+
+        var polygon = new ol.geom.Polygon([[
+          [minlon, minlat], [maxlon, minlat], [maxlon, maxlat],
+          [minlon, maxlat], [minlon, minlat]
+        ]]);
+        var feature = new ol.Feature();
+        feature.setGeometry(polygon);
+        vectorSource.addFeature(feature);
+      }
+
+      // listen on changes in the adjacent inputs
+      $parent.find('input[type="text"]').change(onChange);
+
+      // get a BBox if already defined
+      onChange();
+    }
 
     // shim to work around invisibility bug in Bootstrap tabs
     $("a[data-toggle='tab'][href='#parameters']").on("shown.bs.tab", function() {
@@ -201,5 +225,5 @@ $(function() {
   }
 
   // activate Bootstrap popover
-  $('[data-toggle="popover"]').popover()
+  $('[data-toggle="popover"]').popover();
 });
