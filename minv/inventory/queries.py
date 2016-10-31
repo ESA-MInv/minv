@@ -186,9 +186,10 @@ class AlignmentQuerySet(object):
         returned row having the following keys:
             * ``filename``: the current filename
             * ``incidences``: the incidences of the filenames across all
-              locations. A :class:`list` containing the checksum for each
-              location or ``None`` if the location does not have a record with
-              that filename.
+              locations. A :class:`list` of 2-tuples containing the checksum
+              for each location or ``None`` if the location does not have a
+              record with that filename or the checksum is null and a boolean
+              value indicating wether the location has such a record.
             * ``annotation_count``: the number of annotations for the records of
               that filename.
             * ``annotations``: a :class:`QuerySet` with the actual annotations

@@ -150,11 +150,12 @@ def search_view(request, mission, file_type):
     results = None
     if request.method == "POST":
         search_form = forms.SearchForm(
-            collection.locations.all(), available_search_fields, request.POST
+            collection.locations.order_by("pk"),
+            available_search_fields, request.POST
         )
         pagination_form = forms.PaginationForm(request.POST)
         result_list_form = forms.RecordSearchResultListForm(
-            collection.locations.all(), request.POST
+            collection.locations.order_by("pk"), request.POST
         )
         forms_valid = (
             search_form.is_valid() and pagination_form.is_valid() and
@@ -169,10 +170,9 @@ def search_view(request, mission, file_type):
                 "area_footprint_or_scene_centre", "footprint"
             )
 
+            locations = collection.locations.order_by("pk")
             if location_ids:
-                locations = collection.locations.filter(id__in=location_ids)
-            else:
-                locations = collection.locations.all()
+                locations = locations.filter(id__in=location_ids)
 
             observer = monitor(
                 "search_overview", **search_data
@@ -191,13 +191,13 @@ def search_view(request, mission, file_type):
 
     else:
         search_form = forms.SearchForm(
-            collection.locations.all(), available_search_fields
+            collection.locations.order_by("pk"), available_search_fields
         )
         pagination_form = forms.PaginationForm(
             initial={'page': '1', 'records_per_page': '15'}
         )
         result_list_form = forms.RecordSearchResultListForm(
-            collection.locations.all()
+            collection.locations.order_by("pk")
         )
 
     return render(
@@ -236,11 +236,12 @@ def result_list_view(request, mission, file_type):
     result_list_location = None
     if request.method == "POST":
         search_form = search_form = forms.SearchForm(
-            collection.locations.all(), available_search_fields, request.POST
+            collection.locations.order_by("pk"), available_search_fields,
+            request.POST
         )
         pagination_form = forms.PaginationForm(request.POST)
         result_list_form = forms.RecordSearchResultListForm(
-            collection.locations.all(), request.POST
+            collection.locations.order_by("pk"), request.POST
         )
 
         forms_valid = (
@@ -306,13 +307,13 @@ def result_list_view(request, mission, file_type):
 
     else:
         search_form = forms.SearchForm(
-            collection.locations.all(), available_search_fields
+            collection.locations.order_by("pk"), available_search_fields
         )
         pagination_form = forms.PaginationForm(
             initial={'page': '1', 'records_per_page': '15'}
         )
         result_list_form = forms.RecordSearchResultListForm(
-            collection.locations.all()
+            collection.locations.order_by("pk")
         )
 
     # Response formats
@@ -399,7 +400,7 @@ def record_view(request, mission, file_type, filename):
     )
     locations = SortedDict((
         (location, get_or_none(records, location=location))
-        for location in collection.locations.all()
+        for location in collection.locations.order_by("pk")
     ))
 
     reference_record, others = records[0], records[1:]
@@ -529,7 +530,8 @@ def alignment_view(request, mission, file_type):
     frmt = "html"
     if request.method == "POST":
         form = forms.AlignmentForm(
-            collection.locations.all(), config.available_alignment_fields or [],
+            collection.locations.order_by("pk"),
+            config.available_alignment_fields or [],
             request.POST
         )
         pagination_form = forms.PaginationForm(request.POST)
@@ -555,7 +557,8 @@ def alignment_view(request, mission, file_type):
             ]
     else:
         form = forms.AlignmentForm(
-            collection.locations.all(), config.available_alignment_fields or []
+            collection.locations.order_by("pk"),
+            config.available_alignment_fields or []
         )
         pagination_form = forms.PaginationForm(
             initial={'page': '1', 'records_per_page': '15'}
@@ -574,12 +577,20 @@ def alignment_view(request, mission, file_type):
     elif frmt in ("csv", "tsv"):
         f = tempfile.SpooledTemporaryFile()
         writer = csv.writer(f, delimiter="," if frmt == "csv" else "\t")
-        writer.writerow(
-            ["filename"] + [l.url for l in locations] + ["annotations"]
-        )
+
+        header = ["filename"]
+        for location in locations:
+            header.extend([
+                "checksum %s" % location.url,
+                "prevalence %s" % location.url
+            ])
+        header.append("annotations")
+        writer.writerow(header)
+
         for row in qs:
             writer.writerow(
-                [row["filename"]] + list(row["incidences"]) +
+                [row["filename"]] +
+                [item for incidence in row["incidences"] for item in incidence] +
                 list(row["annotations"])
             )
 
@@ -694,7 +705,7 @@ def _generate_mapping_formsets(collection, config=None, POST=None):
             (location, forms.MetadataMappingFormset(
                 POST, prefix="location_%d" % location.pk)
             )
-            for location in collection.locations.all().order_by("pk")
+            for location in collection.locations.order_by("pk")
         ])
     else:
         formsets = [
@@ -713,7 +724,7 @@ def _generate_mapping_formsets(collection, config=None, POST=None):
                     ).items()
                 ])
             )
-            for location in collection.locations.all().order_by("pk")
+            for location in collection.locations.order_by("pk")
         ])
 
     return formsets
