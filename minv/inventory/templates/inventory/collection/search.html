@@ -73,7 +73,13 @@
               {{ location }}
             </th>
             <td>{{ values.count }}</td>
-            <td>{{ values.volume | sizeof_fmt }}{% if values.volume %} <small>({{ values.volume }} Bytes)</small>{% endif %}</td>
+            <td>
+              {% if values.volume != None %}
+                {{ values.volume | sizeof_fmt }} <small>({{ values.volume }} Bytes)</small>
+              {% elif values.count > 0 %}
+                <small><i>Could not compute total size</i></small>
+              {% endif %}
+            </td>
             <td>
               <div class="btn-group">
                 <button type="submit" class="btn btn-default btn-xs" name="result_list_location" value="{{ location.id }}" onclick="this.form.action='{% url 'inventory:collection:result_list' mission=collection.mission file_type=collection.file_type %}'">Show Result List</button>

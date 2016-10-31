@@ -30,6 +30,9 @@
   
 
   {{ result_list_form }}
+
+  <h3>{{ location }}</h3>
+
   {% if not result_list %}
     The search returned no results.
   {% else %}
@@ -95,7 +98,11 @@
               </td>
             {% endfor %}
             <td>
-              {{ record.filesize | sizeof_fmt }} <small>({{ record.filesize }} Bytes)</small>
+              {% if record.filesize != None %}
+                {{ record.filesize | sizeof_fmt }} <small>({{ record.filesize }} Bytes)</small>
+              {% else %}
+                <small><i>No size stored</i></small>
+              {% endif %}
             </td>
             <td>
               <a href="#" data-toggle="popover" data-trigger="hover" data-placement="left" data-html="true" data-title="Annotations" data-content="{{ record.annotations.all|join:"<div class='divider'/>" }}">{{ record.annotations.all|join:' | ' }}</a>
