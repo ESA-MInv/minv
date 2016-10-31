@@ -28,16 +28,14 @@
   </div>
   <div class="panel-body">
     <table class="table table-bordered table-condensed">
-      <thead>
-        <tr>
-          {% for location, _ in locations.items %}
-          <th style="text-align: center; word-break: break-all;">{{ location }}</th>
-          {% endfor %}
-        </tr>
-      </thead>
+      <colgroup>
+        <col style="width: auto">
+        <col style="width: 3em;">
+      </colgroup>
       <tbody>
-        <tr>
-          {% for location, record in locations.items %}
+        {% for location, record in locations.items %}
+          <tr>
+            <th>{{ location }}</th>
             <td style="text-align: center">
             {% if record %}
               {% if checksum_mismatch and record.checksum != None %}
@@ -51,10 +49,14 @@
               <span class="glyphicon glyphicon-remove missing" aria-hidden="true"></span>
             {% endif %}
             </td>
-          {% endfor %}
-        </tr>
+          </tr>
+        {% endfor %}
       </tbody>
     </table>
+
+    {% if null_checksum_locations %}
+    <i>Could not perform fixity check for records on location{{ null_checksum_locations | pluralize}} {% for location in null_checksum_locations %}{% if forloop.first %}{% elif forloop.last%} and {% else %}, {% endif %}{{ location }}{% endfor %} as the checksum is null.</i>
+    {% endif %}
   </div>
 </div>
 
@@ -139,26 +141,18 @@
     <h3 class="panel-title">Annotations</h3>
   </div>
   <div class="panel-body">
-    <table class="table table-bordered table-condensed">
-      <tbody>
-        <tr>
-          <td>
-            {% for location, record in locations.items %}
-              {% if record and record.annotations.exists %}
-                <b>{{ location }}</b>
-                {% for annotation in record.annotations.all %}
-                <form action="{% url 'inventory:collection:annotation_delete' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
-                  {% csrf_token %}
-                  <input type="hidden" name="annotation" value="{{ annotation.pk }}">
-                  <pre>{{ annotation.text }} <button type="submit" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button></pre>
-                </form>
-                {% endfor %}
-              {% endif %}
-            {% endfor %}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    {% for location, record in locations.items %}
+      {% if record and record.annotations.exists %}
+        <b>{{ location }}</b>
+        {% for annotation in record.annotations.all %}
+        <form action="{% url 'inventory:collection:annotation_delete' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="annotation" value="{{ annotation.pk }}">
+          <pre>{{ annotation.text }} <button type="submit" class="close" aria-label="Close"><span aria-hidden="true">&times;</span></button></pre>
+        </form>
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
 
     <h5>Add Annotation</h5>
     <form class="form" action="{% url 'inventory:collection:annotation_add' mission=collection.mission file_type=collection.file_type filename=filename %}" method="post">

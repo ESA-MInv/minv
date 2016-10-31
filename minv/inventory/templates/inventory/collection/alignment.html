@@ -43,10 +43,15 @@
       </div>
     </div>
     <div role="tabpanel" class="tab-pane {% if not records == None %}active{% endif %}" id="records">
+    {% if locations_with_no_checksum %}
+    <p><i>Could not perform fixity check for records on location{{ locations_with_no_checksum | pluralize }} {% for location in locations_with_no_checksum %}{% if forloop.first %}{% elif forloop.last%} and {% else %}, {% endif %}{{ location }}{% endfor %} as the checksum is not mapped.</i></p>
+    {% endif %}
+
     {% if not records %}
       No missalignments were detected.
     {% else %}
       <p>Search hit {{ records.paginator.count }} records, showing {{ records|length }}.</p>
+
       <table class="table table-striped table-condensed table-hover table-header-rotated">
         <colgroup>
           <col style="width: auto;">

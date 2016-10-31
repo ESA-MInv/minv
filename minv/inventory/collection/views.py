@@ -219,6 +219,7 @@ def result_list_view(request, mission, file_type):
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
+    location = None
 
     available_search_fields = get_available_search_fields(collection)
 
@@ -372,6 +373,7 @@ def result_list_view(request, mission, file_type):
                 "result_list_form": result_list_form,
                 "add_annotation_list_form": add_annotation_list_form,
                 "collection": collection,
+                "location": location,
                 "results": results,
                 "result_list": result_list,
                 "result_list_location": result_list_location,
@@ -441,6 +443,11 @@ def record_view(request, mission, file_type, filename):
     if not records.exists():
         pass  # TODO: raise
 
+    null_checksum_locations = [
+        location for location, record in locations.items()
+        if record is not None and record.checksum is None
+    ]
+
     return render(
         request, "inventory/collection/record.html", {
             "collections": models.Collection.objects.all(),
@@ -449,6 +456,7 @@ def record_view(request, mission, file_type, filename):
             "locations": locations, "records": records,
             "differences": differences,
             "checksum_mismatch": checksum_mismatch,
+            "null_checksum_locations": null_checksum_locations,
             "add_annotation_form": add_annotation_form
         }
     )
@@ -517,6 +525,7 @@ def alignment_view(request, mission, file_type):
 
     records = None
     locations = None
+    locations_with_no_checksum = None
     frmt = "html"
     if request.method == "POST":
         form = forms.AlignmentForm(
@@ -539,6 +548,11 @@ def alignment_view(request, mission, file_type):
                 records = Paginator(qs, per_page).page(page)
             else:
                 records = qs
+
+            locations_with_no_checksum = [
+                location for location in locations or []
+                if collection.get_metadata_field_mapping(location).get("checksum") is None
+            ]
     else:
         form = forms.AlignmentForm(
             collection.locations.all(), config.available_alignment_fields or []
@@ -553,7 +567,8 @@ def alignment_view(request, mission, file_type):
                 "collections": models.Collection.objects.all(),
                 "collection": collection, "alignment_form": form,
                 "pagination_form": pagination_form, "records": records,
-                "locations": locations
+                "locations": locations,
+                "locations_with_no_checksum": locations_with_no_checksum
             }
         )
     elif frmt in ("csv", "tsv"):
