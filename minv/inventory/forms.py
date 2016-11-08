@@ -432,9 +432,17 @@ class AlignmentForm(forms.Form):
 
         for name, __ in inventory_models.ALIGNMENT_FIELD_CHOICES:
             if name in available_alignment_fields:
-                self.fields[name] = create_formfield_for_model_field(
-                    inventory_models.Record._meta.get_field_by_name(name)[0]
-                )
+                if name == "acquisition_date":
+                    self.fields["acquisition_date"] = \
+                        create_formfield_for_model_field(
+                            inventory_models.Record._meta.get_field_by_name(
+                                "begin_time"
+                            )[0]
+                        )
+                else:
+                    self.fields[name] = create_formfield_for_model_field(
+                        inventory_models.Record._meta.get_field_by_name(name)[0]
+                    )
 
 
 class ImportExportBaseForm(forms.Form):

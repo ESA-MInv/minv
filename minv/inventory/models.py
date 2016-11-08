@@ -85,8 +85,7 @@ ALIGNMENT_FIELD_CHOICES = (
     ("creation_date", "Creation Time"),
     ("baseline", "Baseline/Version"),
     ("filename", "File Name"),
-    ("begin_time", "Begin Acquisistion"),
-    ("end_time", "End Acquisition"),
+    ("acquisition_date", "Acquisistion"),
 )
 
 
