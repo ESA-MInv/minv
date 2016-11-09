@@ -117,10 +117,19 @@ def harvest_view(request, mission, file_type):
                 "reschedule": False
             }))
 
-        schedule_many(items)
-        messages.info(request, "Harvesting URL%s %s for collection %s" % (
-            "s" if len(urls) > 1 else "", ", ".join(urls), collection
-        ))
+        try:
+            schedule_many(items)
+        except:
+            messages.error(request,
+                "Failed to harvest URL%s %s for collection %s. "
+                "Is the harvesting daemon running?" % (
+                    "s" if len(urls) > 1 else "", ", ".join(urls), collection
+                )
+            )
+        else:
+            messages.info(request, "Harvesting URL%s %s for collection %s" % (
+                "s" if len(urls) > 1 else "", ", ".join(urls), collection
+            ))
     else:
         messages.warning(
             request, "Please select at least one harvesting location."
