@@ -106,19 +106,25 @@ def harvest_view(request, mission, file_type):
         mission=mission, file_type=file_type
     )
 
-    items = []
-    for url in request.GET.getlist("url"):
-        messages.info(request, "Harvesting URL %s for collection %s" % (
-            url, collection
-        ))
-        items.append(("harvest", now(), {
-            "mission": mission,
-            "file_type": file_type,
-            "url": url,
-            "reschedule": False
-        }))
+    urls = request.GET.getlist("url")
+    if urls:
+        items = []
+        for url in urls:
+            items.append(("harvest", now(), {
+                "mission": mission,
+                "file_type": file_type,
+                "url": url,
+                "reschedule": False
+            }))
 
-    schedule_many(items)
+        schedule_many(items)
+        messages.info(request, "Harvesting URL%s %s for collection %s" % (
+            "s" if len(urls) > 1 else "", ", ".join(urls), collection
+        ))
+    else:
+        messages.warning(
+            request, "Please select at least one harvesting location."
+        )
 
     return redirect("inventory:collection:detail",
         mission=mission, file_type=file_type

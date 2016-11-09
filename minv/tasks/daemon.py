@@ -38,7 +38,7 @@ from multiprocessing.pool import ThreadPool
 from minv.config import GlobalReader
 from minv.tasks.scheduler import Scheduler
 from minv.tasks import models
-from minv.tasks.registry import registry
+from minv.tasks.registry import registry, run_task
 
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class Daemon(object):
             registry.initialize()
 
             # create executors, listener and scheduler
-            self.executor_pool = ThreadPool(5)
+            self.executor_pool = ThreadPool(1)
             self.scheduler = Scheduler(self.on_scheduled)
             self.listener = get_listener()
 
@@ -103,11 +103,6 @@ class Daemon(object):
                 elif command == "abort":
                     pass
                     # TODO: implement
-                    # job = models.Job.objects.get(id=params[0])
-                    # logger.info("Restarting job '%s'" % job)
-                    # self.executor_pool.apply_async(
-                    #     registry.run, [job], job.arguments
-                    # )
 
         finally:
             self.shutdown()
@@ -136,7 +131,7 @@ class Daemon(object):
         task = scheduled_task.task
         arguments = scheduled_task.argument_values
         scheduled_task.delete()
-        self.executor_pool.apply_async(registry.run, [task], arguments)
+        self.executor_pool.apply_async(run_task, [task], arguments)
 
     def reload_schedule(self):
         """ Reload the scheduled items from the database.

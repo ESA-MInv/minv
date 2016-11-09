@@ -56,9 +56,7 @@ class Registry(object):
             return wrapped
 
     def run(self, task, **kwargs):
-        name = task if isinstance(task, str) else task.task
-
-        logger.debug("Running task '%s'" % name)
+        name = task if isinstance(task, basestring) else task.task
         with monitor(task, **kwargs):
             return self._tasks[name](**kwargs)
 
@@ -79,3 +77,10 @@ class Registry(object):
 
 registry = Registry()
 task = registry.register
+
+
+def run_task(task, **kwargs):
+    try:
+        registry.run(task, **kwargs)
+    except Exception as e:
+        logger.exception(str(e))

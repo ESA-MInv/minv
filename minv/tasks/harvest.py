@@ -63,6 +63,8 @@ def harvest(mission, file_type, url, reschedule=False):
     """ Performs the harvesting for the specified collection and location.
     Returns
     """
+
+    print "Running harvest"
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
