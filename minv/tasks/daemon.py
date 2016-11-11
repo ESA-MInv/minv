@@ -84,25 +84,29 @@ class Daemon(object):
                     else:
                         raise
 
-                logger.debug("Client connected: %s", conn)
-                message = conn.recv()
-                logger.debug("Received message: %r", message)
+                command = None
+                try:
+                    logger.debug("Client connected: %s", conn)
+                    message = conn.recv()
+                    logger.debug("Received message: %r", message)
 
-                command = message[0]
-                params = message[1:]
+                    command = message[0]
+                    params = message[1:]
 
-                if command == "reload":
-                    self.reload_schedule()
+                    if command == "reload":
+                        self.reload_schedule()
 
-                elif command == "restart":
-                    job = models.Job.objects.get(id=params[0])
-                    logger.info("Restarting job '%s'" % job)
-                    self.executor_pool.apply_async(
-                        registry.run, [job], job.arguments
-                    )
-                elif command == "abort":
-                    pass
-                    # TODO: implement
+                    elif command == "restart":
+                        job = models.Job.objects.get(id=params[0])
+                        logger.info("Restarting job '%s'" % job)
+                        self.executor_pool.apply_async(
+                            registry.run, [job], job.arguments
+                        )
+                    elif command == "abort":
+                        pass
+                        # TODO: implement
+                except Exception as exc:
+                    logger.exception("Daemon command %s failed." % command)
 
         finally:
             self.shutdown()
@@ -131,6 +135,8 @@ class Daemon(object):
         task = scheduled_task.task
         arguments = scheduled_task.argument_values
         scheduled_task.delete()
+
+        print task, arguments
         self.executor_pool.apply_async(run_task, [task], arguments)
 
     def reload_schedule(self):
