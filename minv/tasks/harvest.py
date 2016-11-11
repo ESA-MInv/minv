@@ -64,7 +64,6 @@ def harvest(mission, file_type, url, reschedule=False):
     Returns
     """
 
-    print "Running harvest"
     collection = models.Collection.objects.get(
         mission=mission, file_type=file_type
     )
