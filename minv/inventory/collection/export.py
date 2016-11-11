@@ -34,6 +34,7 @@ from contextlib import closing
 import tempfile
 import csv
 from shutil import rmtree, move
+import logging
 
 from django.utils.timezone import now
 from django.db import transaction
@@ -43,6 +44,10 @@ from minv.inventory import models
 from minv.inventory.ingest import ingest
 from minv.utils import safe_makedirs
 from minv.tasks.registry import task
+from minv.tasks.api import schedule
+
+
+logger = logging.getLogger(__name__)
 
 
 class ImportException(Exception):
@@ -51,7 +56,7 @@ class ImportException(Exception):
 
 @task("export")
 def export_collection(mission, file_type, filename=None,
-                      configuration=True, data=True):
+                      configuration=True, data=True, reschedule=False):
     """ Export the configuration and/or the data of a collection to a ZIP file.
     """
 
@@ -66,14 +71,38 @@ def export_collection(mission, file_type, filename=None,
     if not filename:
         exports_dir = join(collection.data_dir, "exports")
         safe_makedirs(exports_dir)
-        filename = join(
+        new_filename = join(
             exports_dir, "export_%s.zip" % now().strftime("%Y%m%d-%H%M%S")
         )
 
     with collection.get_lock():
-        return _export_collection_locked(
-            collection, filename, configuration, data
+        ret_val = _export_collection_locked(
+            collection, filename or new_filename, configuration, data
         )
+
+        logger.info(
+            "Successfully exported %s collection to %s" % (collection, filename)
+        )
+
+        if reschedule:
+            try:
+                interval = collection.configuration.export_interval
+                schedule("export", now() + interval, {
+                    "mission": mission,
+                    "file_type": file_type,
+                    "filename": filename,
+                    "configuration": configuration,
+                    "data": data,
+                    "reschedule": True
+                })
+            except Exception as exc:
+                logger.error(
+                    "Failed to reschedule export for %s. Error was '%s'." % (
+                        collection, exc
+                    )
+                )
+
+        return ret_val
 
 
 def _export_collection_locked(collection, filename, configuration, data):
@@ -136,6 +165,7 @@ def _export_collection_locked(collection, filename, configuration, data):
                     )
 
     os.chmod(filename, 0660)
+
     return filename
 
 
