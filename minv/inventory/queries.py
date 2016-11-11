@@ -95,13 +95,15 @@ def search(collection, filters=None, queryset=None, area_is_footprint=True):
                         "%s__lte" % key_low: high, "%s__gte" % key_high: low
                     }
                 elif len(value) == 4:
+                    bbox = [value[1], value[0], value[3], value[2]]
+                    polygon = Polygon.from_bbox(bbox)
                     if area_is_footprint:
                         filter_ = {
-                            "footprint__intersects": Polygon.from_bbox(value)
+                            "footprint__intersects": polygon
                         }
                     else:
                         filter_ = {
-                            "scene_centre__within": Polygon.from_bbox(value)
+                            "scene_centre__within": polygon
                         }
                 else:
                     raise ValueError("Invalid parameter %s: %r" % (key, value))
